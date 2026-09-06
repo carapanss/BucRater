@@ -1,6 +1,13 @@
 import { useTagsStore } from '../store/useTagsStore';
 import { useBooksStore } from '../store/useBooksStore';
-import type { BookStatus } from '../types';
+import type { BookSortBy, BookStatus } from '../types';
+
+const SORT_OPTIONS: { value: BookSortBy; label: string }[] = [
+  { value: 'created_desc', label: 'Más recientes primero' },
+  { value: 'rating_desc', label: 'Mejor valorados' },
+  { value: 'pages_desc', label: 'Más páginas' },
+  { value: 'title_asc', label: 'Título (A-Z)' },
+];
 
 export function SearchFilterBar() {
   const filter = useBooksStore((s) => s.filter);
@@ -11,7 +18,7 @@ export function SearchFilterBar() {
     <div className="list-toolbar">
       <input
         className="input"
-        placeholder="Buscar por título o autor..."
+        placeholder="Buscar por título, autor, notas o citas..."
         value={filter.searchText ?? ''}
         onChange={(e) => setFilter({ ...filter, searchText: e.target.value || null })}
       />
@@ -52,6 +59,17 @@ export function SearchFilterBar() {
         {[1, 2, 3, 4, 5].map((n) => (
           <option key={n} value={n}>
             {n}+ estrellas
+          </option>
+        ))}
+      </select>
+      <select
+        className="input"
+        value={filter.sortBy ?? 'created_desc'}
+        onChange={(e) => setFilter({ ...filter, sortBy: e.target.value as BookSortBy })}
+      >
+        {SORT_OPTIONS.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
           </option>
         ))}
       </select>

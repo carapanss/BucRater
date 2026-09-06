@@ -10,6 +10,7 @@ interface TagsState {
   create: (name: string, color: string | null) => Promise<Tag>;
   rename: (id: number, name: string, color: string | null) => Promise<void>;
   remove: (id: number) => Promise<void>;
+  merge: (sourceId: number, targetId: number) => Promise<void>;
 }
 
 function reportError(action: string, err: unknown): never {
@@ -53,6 +54,14 @@ export const useTagsStore = create<TagsState>((set, get) => ({
       set({ tags: get().tags.filter((t) => t.id !== id) });
     } catch (err) {
       reportError('No se pudo eliminar el tag', err);
+    }
+  },
+  merge: async (sourceId, targetId) => {
+    try {
+      await tagsApi.mergeTags(sourceId, targetId);
+      set({ tags: get().tags.filter((t) => t.id !== sourceId) });
+    } catch (err) {
+      reportError('No se pudo fusionar el tag', err);
     }
   },
 }));

@@ -7,12 +7,14 @@ Construida con [Tauri](https://tauri.app) (Rust) + React + TypeScript.
 ## Funcionalidades
 
 - Ficha por libro: título, autor, valoración (1-5), estado (pendiente / leyendo / leído), notas, portada, idioma, páginas, saga y número dentro de la saga.
-- Autocompletado al añadir un libro buscando en Google Books y Open Library.
+- Autocompletado al añadir un libro buscando por título o por autor en Google Books y Open Library.
+- Las portadas sugeridas se descargan y guardan localmente, para no depender de que la URL remota siga disponible.
 - Citas favoritas por libro y contador de relecturas.
-- Tags personalizables con color.
-- Búsqueda y filtros por texto, tag, estado y valoración mínima.
-- Panel de métricas: resumen anual ("wrapped"), velocidad de lectura, comparativa interanual, ranking de autores, distribución de tags y mapa de calor de meses.
-- Exportar/importar toda la biblioteca como backup en JSON.
+- Tags personalizables con color, con fusión de tags duplicados desde el gestor de tags.
+- Búsqueda (título, autor, notas y citas), filtros por tag/estado/valoración mínima, y varios órdenes de la lista.
+- Panel de métricas: resumen anual ("wrapped"), velocidad de lectura, histórico de los últimos 5 años, ranking de autores, distribución de tags y mapa de calor de meses.
+- Exportar/importar toda la biblioteca como backup en JSON, o exportarla a CSV / Markdown.
+- Backups automáticos periódicos, además del export manual.
 - Tema claro/oscuro.
 
 ## Stack técnico
@@ -47,8 +49,9 @@ Genera los instaladores nativos (`.deb`/`.AppImage`, `.msi`/`.exe`, `.dmg` segú
 ## Datos y privacidad
 
 - La base de datos (`bucrater.db`) se guarda en el directorio de datos de la app que gestiona el sistema operativo (por ejemplo, `~/.local/share/com.bucrater.app` en Linux). Nunca sale de tu equipo salvo que exportes un backup manualmente.
-- Al escribir un título en el formulario de "Añadir libro", la app consulta las APIs públicas de **Google Books** y **Open Library** para sugerir portada, autor, páginas e idioma. Solo se envía el texto que escribes en ese campo.
-- El backup exportado (`Importar` / `Exportar` en la barra superior) es un archivo `.json` plano que puedes guardar donde quieras; no se sube a ningún servidor.
+- Al escribir un título o un autor en el formulario de "Añadir libro", la app consulta las APIs públicas de **Google Books** y **Open Library** para sugerir portada, autor, páginas e idioma. Solo se envía el texto que escribes en ese campo.
+- Las portadas elegidas se descargan una vez y se guardan en `.../com.bucrater.app/covers/`.
+- Además de los backups manuales (`Importar` / `Exportar` en la barra superior, en JSON/CSV/Markdown), la app guarda automáticamente una copia de seguridad en `.../com.bucrater.app/backups/` (como mucho una cada 12 horas, conservando las últimas 14). Ningún backup sale de tu equipo salvo que tú lo compartas.
 
 ## Estructura del proyecto
 

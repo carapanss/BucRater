@@ -1,3 +1,4 @@
+mod autobackup;
 mod commands;
 mod db;
 mod error;
@@ -31,9 +32,11 @@ pub fn run() {
                 .expect("no se pudo resolver el directorio de datos de la app");
             let db_path = app_data_dir.join("bucrater.db");
             let conn = db::init(&db_path).expect("fallo al inicializar la base de datos");
-            app.manage(AppState {
-                repo: Arc::new(SqliteRepository::new(conn)),
-            });
+            let repo = Arc::new(SqliteRepository::new(conn));
+
+            autobackup::spawn(repo.clone(), app_data_dir.join("backups"));
+
+            app.manage(AppState { repo });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -48,6 +51,7 @@ pub fn run() {
             commands::tags::create_tag,
             commands::tags::rename_tag,
             commands::tags::delete_tag,
+            commands::tags::merge_tags,
             commands::quotes::list_quotes,
             commands::quotes::add_quote,
             commands::quotes::update_quote,
@@ -56,6 +60,9 @@ pub fn run() {
             commands::metrics::get_global_metrics,
             commands::backup::export_backup,
             commands::backup::import_backup,
+            commands::export::export_csv,
+            commands::export::export_markdown,
+            commands::covers::cache_cover,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

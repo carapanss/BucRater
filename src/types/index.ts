@@ -49,12 +49,15 @@ export interface NewBook {
 
 export type BookUpdate = Omit<NewBook, 'tagIds'>;
 
+export type BookSortBy = 'created_desc' | 'rating_desc' | 'pages_desc' | 'title_asc';
+
 export interface BookFilter {
   searchText?: string | null;
   tagId?: number | null;
   minRating?: number | null;
   status?: BookStatus | null;
   onlyUndefinedDate?: boolean | null;
+  sortBy?: BookSortBy | null;
 }
 
 export interface Quote {
@@ -92,17 +95,12 @@ export interface YearStats {
   avgRating: number | null;
 }
 
-export interface YearComparison {
-  thisYear: YearStats;
-  lastYear: YearStats;
-}
-
 export interface YearMetrics {
   monthlyCounts: MonthCount[];
   undefinedDateCount: number;
   wrapped: WrappedSummary;
   readingVelocity: MonthPages[];
-  yearComparison: YearComparison;
+  yearHistory: YearStats[];
 }
 
 export interface Summary {

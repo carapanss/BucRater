@@ -29,3 +29,8 @@ pub fn rename_tag(
 pub fn delete_tag(state: State<AppState>, id: i64) -> Result<(), AppError> {
     state.repo.delete(id)
 }
+
+#[tauri::command]
+pub fn merge_tags(state: State<AppState>, source_id: i64, target_id: i64) -> Result<(), AppError> {
+    state.repo.merge(source_id, target_id)
+}

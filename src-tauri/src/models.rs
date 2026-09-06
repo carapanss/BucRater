@@ -86,6 +86,8 @@ pub struct BookFilter {
     pub status: Option<String>,
     #[serde(default)]
     pub only_undefined_date: Option<bool>,
+    #[serde(default)]
+    pub sort_by: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -135,19 +137,13 @@ pub struct YearStats {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct YearComparison {
-    pub this_year: YearStats,
-    pub last_year: YearStats,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct YearMetrics {
     pub monthly_counts: Vec<MonthCount>,
     pub undefined_date_count: i64,
     pub wrapped: WrappedSummary,
     pub reading_velocity: Vec<MonthPages>,
-    pub year_comparison: YearComparison,
+    /// Estadísticas de este año y de los cuatro anteriores, en orden ascendente.
+    pub year_history: Vec<YearStats>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

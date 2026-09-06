@@ -6,10 +6,11 @@ import { useBooksStore } from './store/useBooksStore';
 import { errorMessage, useToastStore } from './store/useToastStore';
 import { ThemeToggle } from './components/ThemeToggle';
 import { ToastStack } from './components/ToastStack';
+import { ExportMenu } from './components/ExportMenu';
 import { BookListView } from './views/BookListView';
 import { MetricsView } from './views/MetricsView';
 import { TagsManagerView } from './views/TagsManagerView';
-import { exportBackup, importBackup } from './api/backup';
+import { importBackup } from './api/backup';
 
 type View = 'list' | 'metrics' | 'tags';
 
@@ -33,15 +34,6 @@ export default function App() {
   useEffect(() => {
     void loadTags();
   }, [loadTags]);
-
-  async function handleExport() {
-    try {
-      const ok = await exportBackup();
-      if (ok) pushToast('Backup exportado correctamente.');
-    } catch (err) {
-      pushToast(`No se pudo exportar el backup: ${errorMessage(err)}`, 'error');
-    }
-  }
 
   async function handleImport() {
     try {
@@ -76,9 +68,7 @@ export default function App() {
           <button type="button" className="btn btn-sm" onClick={() => void handleImport()}>
             Importar
           </button>
-          <button type="button" className="btn btn-sm" onClick={() => void handleExport()}>
-            Exportar
-          </button>
+          <ExportMenu />
           <ThemeToggle />
         </div>
       </header>

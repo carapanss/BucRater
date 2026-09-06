@@ -233,7 +233,12 @@ impl BookRepository for SqliteRepository {
         let mut param_values: Vec<Box<dyn ToSql>> = Vec::new();
 
         if let Some(text) = filter.search_text.filter(|t| !t.trim().is_empty()) {
-            clauses.push("(title LIKE ?1 OR author LIKE ?1)".into());
+            clauses.push(
+                "(title LIKE ?1 OR author LIKE ?1 OR notes LIKE ?1 OR EXISTS ( \
+                    SELECT 1 FROM quotes WHERE quotes.book_id = books.id AND quotes.text LIKE ?1 \
+                ))"
+                .into(),
+            );
             param_values.push(Box::new(format!("%{}%", text)));
         }
         if let Some(tag_id) = filter.tag_id {
@@ -261,10 +266,13 @@ impl BookRepository for SqliteRepository {
             format!("WHERE {}", clauses.join(" AND "))
         };
 
-        let sql = format!(
-            "SELECT * FROM books {} ORDER BY created_at DESC",
-            where_sql
-        );
+        let order_sql = match filter.sort_by.as_deref() {
+            Some("rating_desc") => "ORDER BY rating IS NULL, rating DESC, title COLLATE NOCASE ASC",
+            Some("pages_desc") => "ORDER BY page_count IS NULL, page_count DESC, title COLLATE NOCASE ASC",
+            Some("title_asc") => "ORDER BY title COLLATE NOCASE ASC",
+            _ => "ORDER BY created_at DESC",
+        };
+        let sql = format!("SELECT * FROM books {} {}", where_sql, order_sql);
 
         let mut stmt = conn.prepare(&sql)?;
         let param_refs: Vec<&dyn ToSql> = param_values.iter().map(|b| b.as_ref()).collect();
@@ -330,6 +338,23 @@ impl TagRepository for SqliteRepository {
     fn delete(&self, id: i64) -> Result<(), AppError> {
         let conn = self.conn.lock().unwrap();
         conn.execute("DELETE FROM tags WHERE id = ?1", params![id])?;
+        Ok(())
+    }
+
+    fn merge(&self, source_id: i64, target_id: i64) -> Result<(), AppError> {
+        let mut conn = self.conn.lock().unwrap();
+        let tx = conn.transaction()?;
+        // Reasigna al tag destino las relaciones del tag origen; las que ya existían en el
+        // destino (mismo libro) se ignoran para no violar la clave primaria compuesta.
+        tx.execute(
+            "UPDATE OR IGNORE book_tags SET tag_id = ?1 WHERE tag_id = ?2",
+            params![target_id, source_id],
+        )?;
+        // Cualquier relación que no se haya podido reasignar (por conflicto) queda huérfana
+        // del tag origen; se elimina junto con el propio tag.
+        tx.execute("DELETE FROM book_tags WHERE tag_id = ?1", params![source_id])?;
+        tx.execute("DELETE FROM tags WHERE id = ?1", params![source_id])?;
+        tx.commit()?;
         Ok(())
     }
 }
@@ -475,17 +500,17 @@ impl MetricsRepository for SqliteRepository {
             )?;
             Ok(YearStats { year: y, books, pages, avg_rating })
         };
-        let year_comparison = YearComparison {
-            this_year: year_stats(year)?,
-            last_year: year_stats(year - 1)?,
-        };
+        let mut year_history = Vec::with_capacity(5);
+        for y in (year - 4)..=year {
+            year_history.push(year_stats(y)?);
+        }
 
         Ok(YearMetrics {
             monthly_counts,
             undefined_date_count,
             wrapped,
             reading_velocity,
-            year_comparison,
+            year_history,
         })
     }
 
@@ -826,5 +851,94 @@ mod tests {
 
         let books_after = BookRepository::list(&fresh, BookFilter::default()).unwrap();
         assert!(books_after.is_empty(), "el import fallido no debe dejar filas parciales");
+    }
+
+    #[test]
+    fn search_text_matches_notes_and_quotes() {
+        let repo = test_repo();
+        let mut with_note = sample_book("Libro con nota");
+        with_note.notes = Some("una anotación muy específica".into());
+        BookRepository::create(&repo, with_note).unwrap();
+
+        let with_quote = BookRepository::create(&repo, sample_book("Libro con cita")).unwrap();
+        QuoteRepository::add(&repo, with_quote.id, "una frase inolvidable".into()).unwrap();
+
+        BookRepository::create(&repo, sample_book("Libro sin relación")).unwrap();
+
+        let by_note = BookRepository::list(
+            &repo,
+            BookFilter { search_text: Some("anotación".into()), ..Default::default() },
+        )
+        .unwrap();
+        assert_eq!(by_note.len(), 1);
+        assert_eq!(by_note[0].title, "Libro con nota");
+
+        let by_quote = BookRepository::list(
+            &repo,
+            BookFilter { search_text: Some("inolvidable".into()), ..Default::default() },
+        )
+        .unwrap();
+        assert_eq!(by_quote.len(), 1);
+        assert_eq!(by_quote[0].title, "Libro con cita");
+    }
+
+    #[test]
+    fn list_respects_sort_by() {
+        let repo = test_repo();
+        let mut a = sample_book("Beta");
+        a.rating = Some(3);
+        a.page_count = Some(500);
+        let mut b = sample_book("Alfa");
+        b.rating = Some(5);
+        b.page_count = Some(100);
+        BookRepository::create(&repo, a).unwrap();
+        BookRepository::create(&repo, b).unwrap();
+
+        let by_rating = BookRepository::list(
+            &repo,
+            BookFilter { sort_by: Some("rating_desc".into()), ..Default::default() },
+        )
+        .unwrap();
+        assert_eq!(by_rating[0].title, "Alfa");
+
+        let by_pages = BookRepository::list(
+            &repo,
+            BookFilter { sort_by: Some("pages_desc".into()), ..Default::default() },
+        )
+        .unwrap();
+        assert_eq!(by_pages[0].title, "Beta");
+
+        let by_title = BookRepository::list(
+            &repo,
+            BookFilter { sort_by: Some("title_asc".into()), ..Default::default() },
+        )
+        .unwrap();
+        assert_eq!(by_title[0].title, "Alfa");
+    }
+
+    #[test]
+    fn merge_tags_reassigns_books_and_removes_source() {
+        let repo = test_repo();
+        let source = TagRepository::create(&repo, "scifi".into(), None).unwrap();
+        let target = TagRepository::create(&repo, "Ciencia ficción".into(), None).unwrap();
+
+        let only_source = BookRepository::create(&repo, sample_book("Solo scifi")).unwrap();
+        repo.set_tags(only_source.id, vec![source.id]).unwrap();
+
+        let both = BookRepository::create(&repo, sample_book("Con ambos")).unwrap();
+        repo.set_tags(both.id, vec![source.id, target.id]).unwrap();
+
+        TagRepository::merge(&repo, source.id, target.id).unwrap();
+
+        let tags_after = TagRepository::list(&repo).unwrap();
+        assert!(tags_after.iter().all(|t| t.id != source.id), "el tag origen debe desaparecer");
+
+        let only_source_after = BookRepository::get(&repo, only_source.id).unwrap().unwrap();
+        assert_eq!(only_source_after.tags.len(), 1);
+        assert_eq!(only_source_after.tags[0].id, target.id);
+
+        let both_after = BookRepository::get(&repo, both.id).unwrap().unwrap();
+        assert_eq!(both_after.tags.len(), 1, "no debe quedar duplicado tras la fusión");
+        assert_eq!(both_after.tags[0].id, target.id);
     }
 }

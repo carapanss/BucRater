@@ -19,7 +19,11 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://www.googleapis.com https://openlibrary.org https://covers.openlibrary.org"
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: asset: http://asset.localhost; connect-src 'self' https://www.googleapis.com https://openlibrary.org https://covers.openlibrary.org",
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["$APPDATA/covers/*"]
+      }
     }
   },
   "bundle": {

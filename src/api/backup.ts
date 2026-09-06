@@ -20,3 +20,23 @@ export async function importBackup(): Promise<ImportReport | null> {
   if (!path || Array.isArray(path)) return null;
   return invoke<ImportReport>('import_backup', { path });
 }
+
+export async function exportCsv(): Promise<boolean> {
+  const path = await save({
+    defaultPath: 'bucrater-biblioteca.csv',
+    filters: [{ name: 'CSV', extensions: ['csv'] }],
+  });
+  if (!path) return false;
+  await invoke('export_csv', { path });
+  return true;
+}
+
+export async function exportMarkdown(): Promise<boolean> {
+  const path = await save({
+    defaultPath: 'bucrater-biblioteca.md',
+    filters: [{ name: 'Markdown', extensions: ['md'] }],
+  });
+  if (!path) return false;
+  await invoke('export_markdown', { path });
+  return true;
+}

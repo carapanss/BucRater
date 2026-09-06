@@ -10,6 +10,10 @@ pub enum AppError {
     Io(#[from] std::io::Error),
     #[error("error de formato: {0}")]
     Serde(#[from] serde_json::Error),
+    #[error("error de red: {0}")]
+    Http(#[from] reqwest::Error),
+    #[error("error al exportar CSV: {0}")]
+    Csv(#[from] csv::Error),
     #[error("{0}")]
     Other(String),
 }

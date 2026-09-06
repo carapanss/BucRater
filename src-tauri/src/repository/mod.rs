@@ -18,6 +18,8 @@ pub trait TagRepository: Send + Sync {
     fn create(&self, name: String, color: Option<String>) -> Result<Tag, AppError>;
     fn rename(&self, id: i64, name: String, color: Option<String>) -> Result<Tag, AppError>;
     fn delete(&self, id: i64) -> Result<(), AppError>;
+    /// Reasigna todos los libros de `source_id` a `target_id` y elimina el tag origen.
+    fn merge(&self, source_id: i64, target_id: i64) -> Result<(), AppError>;
 }
 
 pub trait QuoteRepository: Send + Sync {

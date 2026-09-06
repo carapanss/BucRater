@@ -10,6 +10,7 @@ export function TagsManagerView() {
   const create = useTagsStore((s) => s.create);
   const rename = useTagsStore((s) => s.rename);
   const remove = useTagsStore((s) => s.remove);
+  const merge = useTagsStore((s) => s.merge);
   const [newName, setNewName] = useState('');
 
   useEffect(() => {
@@ -33,6 +34,19 @@ export function TagsManagerView() {
     if (!confirmed) return;
     try {
       await remove(id);
+    } catch {
+      // el error ya se notificó mediante un toast
+    }
+  }
+
+  async function handleMerge(sourceId: number, sourceName: string, targetId: number, targetName: string) {
+    const confirmed = await ask(
+      `¿Fusionar "${sourceName}" dentro de "${targetName}"? Los libros con "${sourceName}" pasarán a tener "${targetName}", y "${sourceName}" se eliminará.`,
+      { title: 'Fusionar tags', kind: 'warning' },
+    );
+    if (!confirmed) return;
+    try {
+      await merge(sourceId, targetId);
     } catch {
       // el error ya se notificó mediante un toast
     }
@@ -74,6 +88,30 @@ export function TagsManagerView() {
                   rename(tag.id, e.target.value, tag.color).catch(() => {});
                 }}
               />
+              {tags.length > 1 && (
+                <select
+                  className="input tags-manager-merge"
+                  value=""
+                  aria-label={`Fusionar el tag ${tag.name} con otro`}
+                  onChange={(e) => {
+                    const targetId = Number(e.target.value);
+                    e.target.value = '';
+                    if (!targetId) return;
+                    const target = tags.find((t) => t.id === targetId);
+                    if (!target) return;
+                    void handleMerge(tag.id, tag.name, target.id, target.name);
+                  }}
+                >
+                  <option value="">Fusionar con…</option>
+                  {tags
+                    .filter((t) => t.id !== tag.id)
+                    .map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                </select>
+              )}
               <button
                 type="button"
                 className="btn btn-danger btn-sm"

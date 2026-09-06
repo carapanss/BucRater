@@ -489,6 +489,9 @@ textarea.input {
 .tags-manager-row .input {
   flex: 1;
 }
+.tags-manager-row .tags-manager-merge {
+  flex: 0 0 170px;
+}
 .color-swatch {
   width: 22px;
   height: 22px;

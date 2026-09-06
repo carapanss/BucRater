@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import type { Book } from '../types';
 import { TagBadge } from './TagBadge';
+import { resolveCoverSrc } from '../api/covers';
 
 const STATUS_LABEL: Record<string, string> = {
   pending: 'Pendiente',
@@ -20,7 +21,7 @@ export function BookCard({ book, onClick }: { book: Book; onClick: () => void })
       onClick={onClick}
     >
       <div className="book-card-cover">
-        {book.coverUrl ? <img src={book.coverUrl} alt={book.title} /> : <span>Sin portada</span>}
+        {book.coverUrl ? <img src={resolveCoverSrc(book.coverUrl)} alt={book.title} /> : <span>Sin portada</span>}
       </div>
       <div className="book-card-body">
         <div className="book-card-title">{book.title}</div>

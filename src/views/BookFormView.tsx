@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { ask } from '@tauri-apps/plugin-dialog';
 import { useBooksStore } from '../store/useBooksStore';
 import { useGoogleBooksSearch } from '../hooks/useGoogleBooksSearch';
+import { cacheCover } from '../api/covers';
 import { StarRating } from '../components/StarRating';
 import { MonthYearPicker } from '../components/MonthYearPicker';
 import { TagPicker } from '../components/TagPicker';
 import { RereadCounter } from '../components/RereadCounter';
 import { QuotesPanel } from '../components/QuotesPanel';
-import type { Book, BookStatus, GoogleBooksSuggestion } from '../types';
+import type { Book, BookStatus, BookUpdate, GoogleBooksSuggestion } from '../types';
 
 interface BookFormViewProps {
   book: Book | null;
@@ -77,6 +78,10 @@ export function BookFormView({ book, onDone }: BookFormViewProps) {
   const [titleQuery, setTitleQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const { suggestions, loading: searchLoading, error: searchError } = useGoogleBooksSearch(titleQuery);
+  const [authorQuery, setAuthorQuery] = useState('');
+  const [showAuthorSuggestions, setShowAuthorSuggestions] = useState(false);
+  const authorSearchQuery = authorQuery.trim().length >= 3 ? `inauthor:${authorQuery.trim()}` : '';
+  const { suggestions: authorSuggestions, loading: authorSearchLoading } = useGoogleBooksSearch(authorSearchQuery);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [rereadCount, setRereadCount] = useState(book?.rereadCount ?? 0);
@@ -99,6 +104,34 @@ export function BookFormView({ book, onDone }: BookFormViewProps) {
       language: s.language,
     }));
     setShowSuggestions(false);
+    setShowAuthorSuggestions(false);
+  }
+
+  /** Descarga y guarda localmente la portada remota de un libro ya guardado (best-effort). */
+  async function cacheCoverIfNeeded(saved: Book) {
+    if (!saved.coverUrl?.startsWith('http')) return;
+    try {
+      const localPath = await cacheCover(saved.coverUrl, saved.uuid);
+      const update: BookUpdate = {
+        title: saved.title,
+        author: saved.author,
+        rating: saved.rating,
+        notes: saved.notes,
+        status: saved.status,
+        coverUrl: localPath,
+        googleBooksId: saved.googleBooksId,
+        addedYear: saved.addedYear,
+        addedMonth: saved.addedMonth,
+        pageCount: saved.pageCount,
+        publicationYear: saved.publicationYear,
+        language: saved.language,
+        seriesName: saved.seriesName,
+        seriesIndex: saved.seriesIndex,
+      };
+      await updateBook(saved.id, update);
+    } catch {
+      // sin conexión o fallo de descarga: seguimos usando la URL remota como respaldo
+    }
   }
 
   async function handleSubmit() {
@@ -126,12 +159,14 @@ export function BookFormView({ book, onDone }: BookFormViewProps) {
         seriesName: form.seriesName.trim() || null,
         seriesIndex: seriesIndexNum,
       };
+      let saved: Book;
       if (book) {
-        await updateBook(book.id, payload);
+        saved = await updateBook(book.id, payload);
         await setTags(book.id, form.tagIds);
       } else {
-        await addBook({ ...payload, tagIds: form.tagIds });
+        saved = await addBook({ ...payload, tagIds: form.tagIds });
       }
+      await cacheCoverIfNeeded(saved);
       onDone();
     } catch {
       // el error ya se notificó mediante un toast
@@ -202,12 +237,40 @@ export function BookFormView({ book, onDone }: BookFormViewProps) {
 
       <div className="field">
         <label>Autor</label>
-        <input
-          className="input"
-          value={form.author}
-          onChange={(e) => setForm((f) => ({ ...f, author: e.target.value }))}
-          placeholder="Autor"
-        />
+        <div className="autocomplete-wrap">
+          <input
+            className="input"
+            value={form.author}
+            onChange={(e) => {
+              setForm((f) => ({ ...f, author: e.target.value }));
+              setAuthorQuery(e.target.value);
+              setShowAuthorSuggestions(true);
+            }}
+            onFocus={() => setShowAuthorSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowAuthorSuggestions(false), 150)}
+            placeholder="Autor"
+          />
+          {showAuthorSuggestions && authorSuggestions.length > 0 && (
+            <div className="autocomplete-list">
+              {authorSuggestions.map((s) => (
+                <button
+                  key={s.googleBooksId}
+                  type="button"
+                  className="autocomplete-item"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => applySuggestion(s)}
+                >
+                  {s.coverUrl ? <img src={s.coverUrl} alt="" /> : null}
+                  <div className="autocomplete-item-text">
+                    <div className="autocomplete-item-title">{s.title}</div>
+                    <div className="autocomplete-item-author">{s.author}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        {authorSearchLoading && <p className="field-hint">Buscando títulos de este autor...</p>}
       </div>
 
       <div className="field-row">

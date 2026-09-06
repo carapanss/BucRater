@@ -8,7 +8,7 @@ import { TagDistributionChart } from '../components/charts/TagDistributionChart'
 import { ReadingHeatmap } from '../components/charts/ReadingHeatmap';
 import { WrappedCard } from '../components/charts/WrappedCard';
 import { AuthorRankingList } from '../components/charts/AuthorRankingList';
-import { YearComparisonCard } from '../components/charts/YearComparisonCard';
+import { YearHistoryChart } from '../components/charts/YearHistoryChart';
 
 const CURRENT_YEAR = new Date().getFullYear();
 const YEAR_OPTIONS = Array.from({ length: 10 }, (_, i) => CURRENT_YEAR - i);
@@ -57,7 +57,7 @@ export function MetricsView() {
               <ReadingVelocityChart data={yearMetrics.readingVelocity} />
             </div>
             <div className="card">
-              <YearComparisonCard comparison={yearMetrics.yearComparison} />
+              <YearHistoryChart history={yearMetrics.yearHistory} />
             </div>
           </div>
         </>

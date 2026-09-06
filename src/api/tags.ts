@@ -10,3 +10,6 @@ export const renameTag = (id: number, name: string, color: string | null) =>
   invoke<Tag>('rename_tag', { id, name, color });
 
 export const deleteTag = (id: number) => invoke<void>('delete_tag', { id });
+
+export const mergeTags = (sourceId: number, targetId: number) =>
+  invoke<void>('merge_tags', { sourceId, targetId });
