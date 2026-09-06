@@ -192,13 +192,9 @@ export function BookFormView({ book, onDone }: BookFormViewProps) {
             </div>
           )}
         </div>
-        {searchLoading && (
-          <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
-            Buscando en Google Books...
-          </p>
-        )}
+        {searchLoading && <p className="field-hint">Buscando en Google Books...</p>}
         {searchError && (
-          <p style={{ fontSize: 11, color: 'var(--danger)', marginTop: 4 }}>
+          <p className="field-hint field-hint-danger">
             No se pudieron buscar sugerencias ({searchError}). Puedes rellenar los datos a mano.
           </p>
         )}

@@ -1,4 +1,5 @@
 use rusqlite::{params, Connection, OptionalExtension, ToSql};
+use std::collections::HashMap;
 use std::sync::Mutex;
 use uuid::Uuid;
 
@@ -71,6 +72,32 @@ fn fetch_tags_for_book(conn: &Connection, book_id: i64) -> Result<Vec<Tag>, AppE
         .query_map(params![book_id], row_to_tag)?
         .collect::<Result<Vec<_>, _>>()?;
     Ok(tags)
+}
+
+/// Trae los tags de varios libros en una sola consulta (evita N+1 al listar/exportar).
+fn fetch_tags_for_books(conn: &Connection, book_ids: &[i64]) -> Result<HashMap<i64, Vec<Tag>>, AppError> {
+    let mut map: HashMap<i64, Vec<Tag>> = HashMap::new();
+    if book_ids.is_empty() {
+        return Ok(map);
+    }
+    let placeholders = book_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+    let sql = format!(
+        "SELECT book_tags.book_id, tags.id, tags.name, tags.color \
+         FROM book_tags JOIN tags ON tags.id = book_tags.tag_id \
+         WHERE book_tags.book_id IN ({placeholders}) ORDER BY tags.name COLLATE NOCASE"
+    );
+    let mut stmt = conn.prepare(&sql)?;
+    let id_params: Vec<&dyn ToSql> = book_ids.iter().map(|id| id as &dyn ToSql).collect();
+    let rows = stmt.query_map(id_params.as_slice(), |row| {
+        let book_id: i64 = row.get(0)?;
+        let tag = Tag { id: row.get(1)?, name: row.get(2)?, color: row.get(3)? };
+        Ok((book_id, tag))
+    })?;
+    for row in rows {
+        let (book_id, tag) = row?;
+        map.entry(book_id).or_default().push(tag);
+    }
+    Ok(map)
 }
 
 fn fetch_book(conn: &Connection, id: i64) -> Result<Option<Book>, AppError> {
@@ -245,8 +272,10 @@ impl BookRepository for SqliteRepository {
             .query_map(param_refs.as_slice(), row_to_book)?
             .collect::<Result<Vec<_>, _>>()?;
 
+        let ids: Vec<i64> = books.iter().map(|b| b.id).collect();
+        let mut tag_map = fetch_tags_for_books(&conn, &ids)?;
         for book in books.iter_mut() {
-            book.tags = fetch_tags_for_book(&conn, book.id)?;
+            book.tags = tag_map.remove(&book.id).unwrap_or_default();
         }
 
         Ok(books)
@@ -545,21 +574,45 @@ impl BackupRepository for SqliteRepository {
             .query_map([], row_to_tag)?
             .collect::<Result<Vec<_>, _>>()?;
 
-        let mut stmt = conn.prepare("SELECT id FROM books ORDER BY created_at ASC")?;
-        let book_ids: Vec<i64> = stmt
-            .query_map([], |row| row.get(0))?
+        let mut stmt = conn.prepare("SELECT * FROM books ORDER BY created_at ASC")?;
+        let mut books_raw: Vec<Book> = stmt
+            .query_map([], row_to_book)?
             .collect::<Result<Vec<_>, _>>()?;
         drop(stmt);
 
-        let mut books = Vec::with_capacity(book_ids.len());
-        for id in book_ids {
-            let book = fetch_book(&conn, id)?.expect("book id came from a fresh query");
-            let mut stmt = conn.prepare("SELECT text FROM quotes WHERE book_id = ?1 ORDER BY created_at ASC")?;
-            let quotes = stmt
-                .query_map(params![id], |row| row.get::<_, String>(0))?
-                .collect::<Result<Vec<_>, _>>()?;
-            books.push(BackupBook { book, quotes });
+        let ids: Vec<i64> = books_raw.iter().map(|b| b.id).collect();
+
+        let mut tag_map = fetch_tags_for_books(&conn, &ids)?;
+        for book in books_raw.iter_mut() {
+            book.tags = tag_map.remove(&book.id).unwrap_or_default();
         }
+
+        let mut quotes_map: HashMap<i64, Vec<String>> = HashMap::new();
+        if !ids.is_empty() {
+            let placeholders = ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+            let sql = format!(
+                "SELECT book_id, text FROM quotes WHERE book_id IN ({placeholders}) ORDER BY created_at ASC"
+            );
+            let mut stmt = conn.prepare(&sql)?;
+            let id_params: Vec<&dyn ToSql> = ids.iter().map(|id| id as &dyn ToSql).collect();
+            let rows = stmt.query_map(id_params.as_slice(), |row| {
+                let book_id: i64 = row.get(0)?;
+                let text: String = row.get(1)?;
+                Ok((book_id, text))
+            })?;
+            for row in rows {
+                let (book_id, text) = row?;
+                quotes_map.entry(book_id).or_default().push(text);
+            }
+        }
+
+        let books = books_raw
+            .into_iter()
+            .map(|book| {
+                let quotes = quotes_map.remove(&book.id).unwrap_or_default();
+                BackupBook { book, quotes }
+            })
+            .collect();
 
         Ok(BackupData { tags, books })
     }
