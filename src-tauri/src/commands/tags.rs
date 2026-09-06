@@ -1,0 +1,31 @@
+use tauri::State;
+
+use crate::error::AppError;
+use crate::models::Tag;
+use crate::repository::TagRepository;
+use crate::AppState;
+
+#[tauri::command]
+pub fn list_tags(state: State<AppState>) -> Result<Vec<Tag>, AppError> {
+    state.repo.list()
+}
+
+#[tauri::command]
+pub fn create_tag(state: State<AppState>, name: String, color: Option<String>) -> Result<Tag, AppError> {
+    state.repo.create(name, color)
+}
+
+#[tauri::command]
+pub fn rename_tag(
+    state: State<AppState>,
+    id: i64,
+    name: String,
+    color: Option<String>,
+) -> Result<Tag, AppError> {
+    state.repo.rename(id, name, color)
+}
+
+#[tauri::command]
+pub fn delete_tag(state: State<AppState>, id: i64) -> Result<(), AppError> {
+    state.repo.delete(id)
+}
