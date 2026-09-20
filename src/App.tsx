@@ -11,6 +11,7 @@ import { BookListView } from './views/BookListView';
 import { MetricsView } from './views/MetricsView';
 import { TagsManagerView } from './views/TagsManagerView';
 import { importBackup } from './api/backup';
+import { syncLibrary } from './api/sync';
 
 type View = 'list' | 'metrics' | 'tags';
 
@@ -26,14 +27,32 @@ export default function App() {
   const loadBooks = useBooksStore((s) => s.load);
   const pushToast = useToastStore((s) => s.push);
   const [view, setView] = useState<View>('list');
+  const [syncReady, setSyncReady] = useState(false);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
   useEffect(() => {
-    void loadTags();
-  }, [loadTags]);
+    let cancelled = false;
+    void (async () => {
+      try {
+        const result = await syncLibrary();
+        if (result.connected && result.changed) {
+          pushToast(`Biblioteca sincronizada: ${result.bookCount} libros disponibles.`);
+        }
+      } catch (err) {
+        pushToast(`No se pudo iniciar la sincronización: ${errorMessage(err)}`, 'error');
+      } finally {
+        await Promise.all([loadBooks(), loadTags()]);
+        if (!cancelled) setSyncReady(true);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loadBooks, loadTags, pushToast]);
 
   async function handleImport() {
     try {
@@ -73,19 +92,23 @@ export default function App() {
         </div>
       </header>
       <main className="app-body">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={view}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-          >
-            {view === 'list' && <BookListView />}
-            {view === 'metrics' && <MetricsView />}
-            {view === 'tags' && <TagsManagerView />}
-          </motion.div>
-        </AnimatePresence>
+        {!syncReady ? (
+          <p className="empty-state">Conectando con tu biblioteca…</p>
+        ) : (
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={view}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+            >
+              {view === 'list' && <BookListView />}
+              {view === 'metrics' && <MetricsView />}
+              {view === 'tags' && <TagsManagerView />}
+            </motion.div>
+          </AnimatePresence>
+        )}
       </main>
       <ToastStack />
     </div>

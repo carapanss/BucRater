@@ -75,7 +75,10 @@ fn fetch_tags_for_book(conn: &Connection, book_id: i64) -> Result<Vec<Tag>, AppE
 }
 
 /// Trae los tags de varios libros en una sola consulta (evita N+1 al listar/exportar).
-fn fetch_tags_for_books(conn: &Connection, book_ids: &[i64]) -> Result<HashMap<i64, Vec<Tag>>, AppError> {
+fn fetch_tags_for_books(
+    conn: &Connection,
+    book_ids: &[i64],
+) -> Result<HashMap<i64, Vec<Tag>>, AppError> {
     let mut map: HashMap<i64, Vec<Tag>> = HashMap::new();
     if book_ids.is_empty() {
         return Ok(map);
@@ -90,7 +93,11 @@ fn fetch_tags_for_books(conn: &Connection, book_ids: &[i64]) -> Result<HashMap<i
     let id_params: Vec<&dyn ToSql> = book_ids.iter().map(|id| id as &dyn ToSql).collect();
     let rows = stmt.query_map(id_params.as_slice(), |row| {
         let book_id: i64 = row.get(0)?;
-        let tag = Tag { id: row.get(1)?, name: row.get(2)?, color: row.get(3)? };
+        let tag = Tag {
+            id: row.get(1)?,
+            name: row.get(2)?,
+            color: row.get(3)?,
+        };
         Ok((book_id, tag))
     })?;
     for row in rows {
@@ -102,7 +109,11 @@ fn fetch_tags_for_books(conn: &Connection, book_ids: &[i64]) -> Result<HashMap<i
 
 fn fetch_book(conn: &Connection, id: i64) -> Result<Option<Book>, AppError> {
     let book = conn
-        .query_row("SELECT * FROM books WHERE id = ?1", params![id], row_to_book)
+        .query_row(
+            "SELECT * FROM books WHERE id = ?1",
+            params![id],
+            row_to_book,
+        )
         .optional()?;
     match book {
         Some(mut book) => {
@@ -268,7 +279,9 @@ impl BookRepository for SqliteRepository {
 
         let order_sql = match filter.sort_by.as_deref() {
             Some("rating_desc") => "ORDER BY rating IS NULL, rating DESC, title COLLATE NOCASE ASC",
-            Some("pages_desc") => "ORDER BY page_count IS NULL, page_count DESC, title COLLATE NOCASE ASC",
+            Some("pages_desc") => {
+                "ORDER BY page_count IS NULL, page_count DESC, title COLLATE NOCASE ASC"
+            }
             Some("title_asc") => "ORDER BY title COLLATE NOCASE ASC",
             _ => "ORDER BY created_at DESC",
         };
@@ -352,7 +365,10 @@ impl TagRepository for SqliteRepository {
         )?;
         // Cualquier relación que no se haya podido reasignar (por conflicto) queda huérfana
         // del tag origen; se elimina junto con el propio tag.
-        tx.execute("DELETE FROM book_tags WHERE tag_id = ?1", params![source_id])?;
+        tx.execute(
+            "DELETE FROM book_tags WHERE tag_id = ?1",
+            params![source_id],
+        )?;
         tx.execute("DELETE FROM tags WHERE id = ?1", params![source_id])?;
         tx.commit()?;
         Ok(())
@@ -362,7 +378,8 @@ impl TagRepository for SqliteRepository {
 impl QuoteRepository for SqliteRepository {
     fn list(&self, book_id: i64) -> Result<Vec<Quote>, AppError> {
         let conn = self.conn.lock().unwrap();
-        let mut stmt = conn.prepare("SELECT * FROM quotes WHERE book_id = ?1 ORDER BY created_at ASC")?;
+        let mut stmt =
+            conn.prepare("SELECT * FROM quotes WHERE book_id = ?1 ORDER BY created_at ASC")?;
         let quotes = stmt
             .query_map(params![book_id], row_to_quote)?
             .collect::<Result<Vec<_>, _>>()?;
@@ -376,15 +393,26 @@ impl QuoteRepository for SqliteRepository {
             params![book_id, text],
         )?;
         let id = conn.last_insert_rowid();
-        conn.query_row("SELECT * FROM quotes WHERE id = ?1", params![id], row_to_quote)
-            .map_err(AppError::from)
+        conn.query_row(
+            "SELECT * FROM quotes WHERE id = ?1",
+            params![id],
+            row_to_quote,
+        )
+        .map_err(AppError::from)
     }
 
     fn update(&self, id: i64, text: String) -> Result<Quote, AppError> {
         let conn = self.conn.lock().unwrap();
-        conn.execute("UPDATE quotes SET text = ?1 WHERE id = ?2", params![text, id])?;
-        conn.query_row("SELECT * FROM quotes WHERE id = ?1", params![id], row_to_quote)
-            .map_err(AppError::from)
+        conn.execute(
+            "UPDATE quotes SET text = ?1 WHERE id = ?2",
+            params![text, id],
+        )?;
+        conn.query_row(
+            "SELECT * FROM quotes WHERE id = ?1",
+            params![id],
+            row_to_quote,
+        )
+        .map_err(AppError::from)
     }
 
     fn delete(&self, id: i64) -> Result<(), AppError> {
@@ -498,7 +526,12 @@ impl MetricsRepository for SqliteRepository {
                 params![y],
                 |row| row.get(0),
             )?;
-            Ok(YearStats { year: y, books, pages, avg_rating })
+            Ok(YearStats {
+                year: y,
+                books,
+                pages,
+                avg_rating,
+            })
         };
         let mut year_history = Vec::with_capacity(5);
         for y in (year - 4)..=year {
@@ -517,7 +550,8 @@ impl MetricsRepository for SqliteRepository {
     fn global_metrics(&self) -> Result<GlobalMetrics, AppError> {
         let conn = self.conn.lock().unwrap();
 
-        let total_books: i64 = conn.query_row("SELECT COUNT(*) FROM books", [], |row| row.get(0))?;
+        let total_books: i64 =
+            conn.query_row("SELECT COUNT(*) FROM books", [], |row| row.get(0))?;
         let avg_rating: Option<f64> = conn.query_row(
             "SELECT AVG(rating) FROM books WHERE rating IS NOT NULL",
             [],
@@ -528,14 +562,21 @@ impl MetricsRepository for SqliteRepository {
             [],
             |row| row.get(0),
         )?;
-        let summary = Summary { total_books, avg_rating, total_rereads };
+        let summary = Summary {
+            total_books,
+            avg_rating,
+            total_rereads,
+        };
 
         let mut stmt = conn.prepare(
             "SELECT author, COUNT(*) as c FROM books GROUP BY author ORDER BY c DESC, author ASC LIMIT 10",
         )?;
         let author_ranking = stmt
             .query_map([], |row| {
-                Ok(AuthorCount { author: row.get(0)?, count: row.get(1)? })
+                Ok(AuthorCount {
+                    author: row.get(0)?,
+                    count: row.get(1)?,
+                })
             })?
             .collect::<Result<Vec<_>, _>>()?;
 
@@ -563,7 +604,11 @@ impl MetricsRepository for SqliteRepository {
         let tag_distribution = stmt
             .query_map([], |row| {
                 Ok(TagCount {
-                    tag: Tag { id: row.get(0)?, name: row.get(1)?, color: row.get(2)? },
+                    tag: Tag {
+                        id: row.get(0)?,
+                        name: row.get(1)?,
+                        color: row.get(2)?,
+                    },
                     count: row.get(3)?,
                 })
             })?
@@ -576,7 +621,11 @@ impl MetricsRepository for SqliteRepository {
         )?;
         let heatmap = stmt
             .query_map([], |row| {
-                Ok(HeatmapCell { year: row.get(0)?, month: row.get(1)?, count: row.get(2)? })
+                Ok(HeatmapCell {
+                    year: row.get(0)?,
+                    month: row.get(1)?,
+                    count: row.get(2)?,
+                })
             })?
             .collect::<Result<Vec<_>, _>>()?;
 
@@ -588,6 +637,113 @@ impl MetricsRepository for SqliteRepository {
             heatmap,
         })
     }
+}
+
+fn import_all_tx(
+    tx: &rusqlite::Transaction<'_>,
+    data: BackupData,
+) -> Result<ImportReport, AppError> {
+    for tag in &data.tags {
+        tx.execute(
+            "INSERT OR IGNORE INTO tags (name, color) VALUES (?1, ?2)",
+            params![tag.name, tag.color],
+        )?;
+    }
+
+    let mut imported = 0i64;
+    let mut updated = 0i64;
+
+    for backup_book in &data.books {
+        let book = &backup_book.book;
+        let existing_id: Option<i64> = tx
+            .query_row(
+                "SELECT id FROM books WHERE uuid = ?1",
+                params![book.uuid],
+                |row| row.get(0),
+            )
+            .optional()?;
+
+        let book_id = if let Some(id) = existing_id {
+            tx.execute(
+                "UPDATE books SET title=?1, author=?2, rating=?3, notes=?4, status=?5, \
+                 cover_url=?6, google_books_id=?7, added_year=?8, added_month=?9, \
+                 page_count=?10, publication_year=?11, language=?12, series_name=?13, \
+                 series_index=?14, reread_count=?15, updated_at=?16 WHERE id=?17",
+                params![
+                    book.title,
+                    book.author,
+                    book.rating,
+                    book.notes,
+                    book.status,
+                    book.cover_url,
+                    book.google_books_id,
+                    book.added_year,
+                    book.added_month,
+                    book.page_count,
+                    book.publication_year,
+                    book.language,
+                    book.series_name,
+                    book.series_index,
+                    book.reread_count,
+                    book.updated_at,
+                    id,
+                ],
+            )?;
+            updated += 1;
+            id
+        } else {
+            tx.execute(
+                "INSERT INTO books (
+                    uuid, title, author, rating, notes, status, cover_url, google_books_id,
+                    added_year, added_month, page_count, publication_year, language,
+                    series_name, series_index, reread_count, created_at, updated_at
+                ) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18)",
+                params![
+                    book.uuid,
+                    book.title,
+                    book.author,
+                    book.rating,
+                    book.notes,
+                    book.status,
+                    book.cover_url,
+                    book.google_books_id,
+                    book.added_year,
+                    book.added_month,
+                    book.page_count,
+                    book.publication_year,
+                    book.language,
+                    book.series_name,
+                    book.series_index,
+                    book.reread_count,
+                    book.created_at,
+                    book.updated_at,
+                ],
+            )?;
+            imported += 1;
+            tx.last_insert_rowid()
+        };
+
+        let mut tag_ids = Vec::with_capacity(book.tags.len());
+        for tag in &book.tags {
+            let tag_id: i64 = tx.query_row(
+                "SELECT id FROM tags WHERE name = ?1 COLLATE NOCASE",
+                params![tag.name],
+                |row| row.get(0),
+            )?;
+            tag_ids.push(tag_id);
+        }
+        set_tags_inner(tx, book_id, &tag_ids)?;
+
+        tx.execute("DELETE FROM quotes WHERE book_id = ?1", params![book_id])?;
+        for quote_text in &backup_book.quotes {
+            tx.execute(
+                "INSERT INTO quotes (book_id, text) VALUES (?1, ?2)",
+                params![book_id, quote_text],
+            )?;
+        }
+    }
+
+    Ok(ImportReport { imported, updated })
 }
 
 impl BackupRepository for SqliteRepository {
@@ -645,82 +801,25 @@ impl BackupRepository for SqliteRepository {
     fn import_all(&self, data: BackupData) -> Result<ImportReport, AppError> {
         let mut conn = self.conn.lock().unwrap();
         let tx = conn.transaction()?;
-
-        for tag in &data.tags {
-            tx.execute(
-                "INSERT OR IGNORE INTO tags (name, color) VALUES (?1, ?2)",
-                params![tag.name, tag.color],
-            )?;
-        }
-
-        let mut imported = 0i64;
-        let mut updated = 0i64;
-
-        for backup_book in &data.books {
-            let book = &backup_book.book;
-            let existing_id: Option<i64> = tx
-                .query_row(
-                    "SELECT id FROM books WHERE uuid = ?1",
-                    params![book.uuid],
-                    |row| row.get(0),
-                )
-                .optional()?;
-
-            let book_id = if let Some(id) = existing_id {
-                tx.execute(
-                    "UPDATE books SET title=?1, author=?2, rating=?3, notes=?4, status=?5, \
-                     cover_url=?6, google_books_id=?7, added_year=?8, added_month=?9, \
-                     page_count=?10, publication_year=?11, language=?12, series_name=?13, \
-                     series_index=?14, reread_count=?15 WHERE id=?16",
-                    params![
-                        book.title, book.author, book.rating, book.notes, book.status,
-                        book.cover_url, book.google_books_id, book.added_year, book.added_month,
-                        book.page_count, book.publication_year, book.language, book.series_name,
-                        book.series_index, book.reread_count, id,
-                    ],
-                )?;
-                updated += 1;
-                id
-            } else {
-                tx.execute(
-                    "INSERT INTO books (
-                        uuid, title, author, rating, notes, status, cover_url, google_books_id,
-                        added_year, added_month, page_count, publication_year, language,
-                        series_name, series_index, reread_count
-                    ) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16)",
-                    params![
-                        book.uuid, book.title, book.author, book.rating, book.notes, book.status,
-                        book.cover_url, book.google_books_id, book.added_year, book.added_month,
-                        book.page_count, book.publication_year, book.language, book.series_name,
-                        book.series_index, book.reread_count,
-                    ],
-                )?;
-                imported += 1;
-                tx.last_insert_rowid()
-            };
-
-            let mut tag_ids = Vec::with_capacity(book.tags.len());
-            for tag in &book.tags {
-                let tag_id: i64 = tx.query_row(
-                    "SELECT id FROM tags WHERE name = ?1 COLLATE NOCASE",
-                    params![tag.name],
-                    |row| row.get(0),
-                )?;
-                tag_ids.push(tag_id);
-            }
-            set_tags_inner(&tx, book_id, &tag_ids)?;
-
-            tx.execute("DELETE FROM quotes WHERE book_id = ?1", params![book_id])?;
-            for quote_text in &backup_book.quotes {
-                tx.execute(
-                    "INSERT INTO quotes (book_id, text) VALUES (?1, ?2)",
-                    params![book_id, quote_text],
-                )?;
-            }
-        }
-
+        let report = import_all_tx(&tx, data)?;
         tx.commit()?;
-        Ok(ImportReport { imported, updated })
+        Ok(report)
+    }
+}
+
+impl SqliteRepository {
+    /// Reemplaza la caché local por un snapshot canónico descargado del servidor.
+    /// Se mantiene en una sola transacción para que un fallo no deje la biblioteca a medias.
+    pub fn replace_all(&self, data: BackupData) -> Result<ImportReport, AppError> {
+        let mut conn = self.conn.lock().unwrap();
+        let tx = conn.transaction()?;
+        tx.execute("DELETE FROM book_tags", [])?;
+        tx.execute("DELETE FROM quotes", [])?;
+        tx.execute("DELETE FROM books", [])?;
+        tx.execute("DELETE FROM tags", [])?;
+        let report = import_all_tx(&tx, data)?;
+        tx.commit()?;
+        Ok(report)
     }
 }
 
@@ -765,12 +864,24 @@ mod tests {
             counts
                 .iter()
                 .enumerate()
-                .map(|(i, &c)| MonthCount { month: (i + 1) as i64, count: c })
+                .map(|(i, &c)| MonthCount {
+                    month: (i + 1) as i64,
+                    count: c,
+                })
                 .collect::<Vec<_>>()
         };
-        assert_eq!(longest_streak(&make([1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0])), 3);
-        assert_eq!(longest_streak(&make([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])), 0);
-        assert_eq!(longest_streak(&make([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])), 12);
+        assert_eq!(
+            longest_streak(&make([1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0])),
+            3
+        );
+        assert_eq!(
+            longest_streak(&make([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])),
+            0
+        );
+        assert_eq!(
+            longest_streak(&make([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])),
+            12
+        );
     }
 
     #[test]
@@ -788,7 +899,10 @@ mod tests {
 
         let by_text = BookRepository::list(
             &repo,
-            BookFilter { search_text: Some("soledad".into()), ..Default::default() },
+            BookFilter {
+                search_text: Some("soledad".into()),
+                ..Default::default()
+            },
         )
         .unwrap();
         assert_eq!(by_text.len(), 1);
@@ -796,14 +910,20 @@ mod tests {
 
         let by_status = BookRepository::list(
             &repo,
-            BookFilter { status: Some("reading".into()), ..Default::default() },
+            BookFilter {
+                status: Some("reading".into()),
+                ..Default::default()
+            },
         )
         .unwrap();
         assert_eq!(by_status.len(), 1);
 
         let by_rating = BookRepository::list(
             &repo,
-            BookFilter { min_rating: Some(4), ..Default::default() },
+            BookFilter {
+                min_rating: Some(4),
+                ..Default::default()
+            },
         )
         .unwrap();
         assert_eq!(by_rating.len(), 1);
@@ -819,7 +939,10 @@ mod tests {
 
         let backup = repo.export_all().unwrap();
         assert_eq!(backup.books.len(), 1);
-        assert_eq!(backup.books[0].quotes, vec!["Una cita memorable".to_string()]);
+        assert_eq!(
+            backup.books[0].quotes,
+            vec!["Una cita memorable".to_string()]
+        );
 
         let fresh = test_repo();
         let report = fresh.import_all(backup).unwrap();
@@ -843,14 +966,20 @@ mod tests {
         let mut invalid_book = backup.books[0].book.clone();
         invalid_book.uuid = "uuid-invalido".into();
         invalid_book.rating = Some(99);
-        backup.books.push(BackupBook { book: invalid_book, quotes: vec![] });
+        backup.books.push(BackupBook {
+            book: invalid_book,
+            quotes: vec![],
+        });
 
         let fresh = test_repo();
         let result = fresh.import_all(backup);
         assert!(result.is_err());
 
         let books_after = BookRepository::list(&fresh, BookFilter::default()).unwrap();
-        assert!(books_after.is_empty(), "el import fallido no debe dejar filas parciales");
+        assert!(
+            books_after.is_empty(),
+            "el import fallido no debe dejar filas parciales"
+        );
     }
 
     #[test]
@@ -867,7 +996,10 @@ mod tests {
 
         let by_note = BookRepository::list(
             &repo,
-            BookFilter { search_text: Some("anotación".into()), ..Default::default() },
+            BookFilter {
+                search_text: Some("anotación".into()),
+                ..Default::default()
+            },
         )
         .unwrap();
         assert_eq!(by_note.len(), 1);
@@ -875,7 +1007,10 @@ mod tests {
 
         let by_quote = BookRepository::list(
             &repo,
-            BookFilter { search_text: Some("inolvidable".into()), ..Default::default() },
+            BookFilter {
+                search_text: Some("inolvidable".into()),
+                ..Default::default()
+            },
         )
         .unwrap();
         assert_eq!(by_quote.len(), 1);
@@ -896,21 +1031,30 @@ mod tests {
 
         let by_rating = BookRepository::list(
             &repo,
-            BookFilter { sort_by: Some("rating_desc".into()), ..Default::default() },
+            BookFilter {
+                sort_by: Some("rating_desc".into()),
+                ..Default::default()
+            },
         )
         .unwrap();
         assert_eq!(by_rating[0].title, "Alfa");
 
         let by_pages = BookRepository::list(
             &repo,
-            BookFilter { sort_by: Some("pages_desc".into()), ..Default::default() },
+            BookFilter {
+                sort_by: Some("pages_desc".into()),
+                ..Default::default()
+            },
         )
         .unwrap();
         assert_eq!(by_pages[0].title, "Beta");
 
         let by_title = BookRepository::list(
             &repo,
-            BookFilter { sort_by: Some("title_asc".into()), ..Default::default() },
+            BookFilter {
+                sort_by: Some("title_asc".into()),
+                ..Default::default()
+            },
         )
         .unwrap();
         assert_eq!(by_title[0].title, "Alfa");
@@ -931,14 +1075,21 @@ mod tests {
         TagRepository::merge(&repo, source.id, target.id).unwrap();
 
         let tags_after = TagRepository::list(&repo).unwrap();
-        assert!(tags_after.iter().all(|t| t.id != source.id), "el tag origen debe desaparecer");
+        assert!(
+            tags_after.iter().all(|t| t.id != source.id),
+            "el tag origen debe desaparecer"
+        );
 
         let only_source_after = BookRepository::get(&repo, only_source.id).unwrap().unwrap();
         assert_eq!(only_source_after.tags.len(), 1);
         assert_eq!(only_source_after.tags[0].id, target.id);
 
         let both_after = BookRepository::get(&repo, both.id).unwrap().unwrap();
-        assert_eq!(both_after.tags.len(), 1, "no debe quedar duplicado tras la fusión");
+        assert_eq!(
+            both_after.tags.len(),
+            1,
+            "no debe quedar duplicado tras la fusión"
+        );
         assert_eq!(both_after.tags[0].id, target.id);
     }
 }

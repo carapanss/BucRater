@@ -3,6 +3,7 @@ mod commands;
 mod db;
 mod error;
 mod models;
+mod remote;
 mod repository;
 
 use std::sync::Arc;
@@ -12,6 +13,19 @@ use repository::sqlite::SqliteRepository;
 
 pub struct AppState {
     pub repo: Arc<SqliteRepository>,
+    pub remote: Arc<remote::RemoteSync>,
+}
+
+impl AppState {
+    pub fn sync_after_change(&self) {
+        let remote = self.remote.clone();
+        let repo = self.repo.clone();
+        std::thread::spawn(move || {
+            if let Err(error) = remote.push_after_change(&repo) {
+                log::warn!("sincronización remota pendiente: {error}");
+            }
+        });
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -33,10 +47,11 @@ pub fn run() {
             let db_path = app_data_dir.join("bucrater.db");
             let conn = db::init(&db_path).expect("fallo al inicializar la base de datos");
             let repo = Arc::new(SqliteRepository::new(conn));
+            let remote = Arc::new(remote::RemoteSync::from_app_data_dir(&app_data_dir));
 
             autobackup::spawn(repo.clone(), app_data_dir.join("backups"));
 
-            app.manage(AppState { repo });
+            app.manage(AppState { repo, remote });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -60,6 +75,7 @@ pub fn run() {
             commands::metrics::get_global_metrics,
             commands::backup::export_backup,
             commands::backup::import_backup,
+            commands::sync::sync_library,
             commands::export::export_csv,
             commands::export::export_markdown,
             commands::covers::cache_cover,

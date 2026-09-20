@@ -17,5 +17,7 @@ pub fn export_backup(state: State<AppState>, path: String) -> Result<(), AppErro
 pub fn import_backup(state: State<AppState>, path: String) -> Result<ImportReport, AppError> {
     let json = std::fs::read_to_string(path)?;
     let data = serde_json::from_str(&json)?;
-    state.repo.import_all(data)
+    let report = state.repo.import_all(data)?;
+    state.sync_after_change();
+    Ok(report)
 }

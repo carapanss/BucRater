@@ -1,0 +1,22 @@
+[Unit]
+Description=BucRater library sync server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=carapan
+Group=carapan
+WorkingDirectory=/opt/bucrater-server
+EnvironmentFile=-/etc/bucrater-server/bucrater-server.env
+ExecStart=/usr/bin/python3 /opt/bucrater-server/app.py
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/bucrater-server
+
+[Install]
+WantedBy=multi-user.target
