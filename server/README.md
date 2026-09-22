@@ -3,6 +3,8 @@
 Este servicio guarda una copia canónica de la biblioteca en SQLite y expone una
 API privada para que las aplicaciones de escritorio sincronicen su snapshot.
 Está pensado para escuchar únicamente en la IP de Tailscale del servidor.
+Las portadas elegidas manualmente viajan dentro del snapshot como imágenes
+codificadas y se reconstruyen en la carpeta local de cada dispositivo.
 
 ## Instalación en `jacob`
 
@@ -29,6 +31,9 @@ instalación de BucRater.
 - `GET /health` — comprobación de disponibilidad.
 - `GET /api/v1/snapshot` — devuelve la revisión y la biblioteca.
 - `PUT /api/v1/snapshot` — guarda una nueva biblioteca usando `baseRevision`.
+
+Las portadas individuales están limitadas a 8 MB por la aplicación y el payload
+completo de una biblioteca admite hasta 128 MB.
 
 Las revisiones usan control optimista: si dos dispositivos escriben a la vez,
 el cliente recibe `409` y BucRater fusiona los cambios antes de volver a

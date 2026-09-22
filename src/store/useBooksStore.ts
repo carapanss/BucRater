@@ -10,10 +10,12 @@ interface BooksState {
   setFilter: (filter: BookFilter) => void;
   load: () => Promise<void>;
   add: (newBook: NewBook) => Promise<Book>;
-  update: (id: number, changes: BookUpdate) => Promise<Book>;
+  update: (uuid: string, changes: BookUpdate) => Promise<Book>;
+  setCover: (uuid: string, coverUrl: string) => Promise<Book>;
   remove: (id: number) => Promise<void>;
-  setTags: (bookId: number, tagIds: number[]) => Promise<void>;
+  setTags: (uuid: string, tagIds: number[]) => Promise<void>;
   incrementReread: (bookId: number) => Promise<void>;
+  decrementReread: (bookId: number) => Promise<void>;
 }
 
 function reportError(action: string, err: unknown): never {
@@ -48,14 +50,21 @@ export const useBooksStore = create<BooksState>((set, get) => ({
       return reportError('No se pudo añadir el libro', err);
     }
   },
-  update: async (id, changes) => {
+  update: async (uuid, changes) => {
     try {
-      const book = await booksApi.updateBook(id, changes);
+      const book = await booksApi.updateBook(uuid, changes);
       await get().load();
       return book;
     } catch (err) {
       return reportError('No se pudo actualizar el libro', err);
     }
+  },
+  setCover: async (uuid, coverUrl) => {
+    const book = await booksApi.setBookCover(uuid, coverUrl);
+    set((state) => ({
+      books: state.books.map((current) => (current.uuid === uuid ? book : current)),
+    }));
+    return book;
   },
   remove: async (id) => {
     try {
@@ -65,9 +74,9 @@ export const useBooksStore = create<BooksState>((set, get) => ({
       reportError('No se pudo eliminar el libro', err);
     }
   },
-  setTags: async (bookId, tagIds) => {
+  setTags: async (uuid, tagIds) => {
     try {
-      await booksApi.setBookTags(bookId, tagIds);
+      await booksApi.setBookTags(uuid, tagIds);
       await get().load();
     } catch (err) {
       reportError('No se pudieron guardar los tags', err);
@@ -79,6 +88,14 @@ export const useBooksStore = create<BooksState>((set, get) => ({
       await get().load();
     } catch (err) {
       reportError('No se pudo registrar la relectura', err);
+    }
+  },
+  decrementReread: async (bookId) => {
+    try {
+      await booksApi.decrementReread(bookId);
+      await get().load();
+    } catch (err) {
+      reportError('No se pudo corregir la relectura', err);
     }
   },
 }));

@@ -20,7 +20,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
-MAX_BODY_BYTES = 16 * 1024 * 1024
+# A library may contain many embedded cover images. Individual covers are limited
+# by the client, while the server allows a reasonably sized complete snapshot.
+MAX_BODY_BYTES = 128 * 1024 * 1024
 
 
 def utc_now() -> str:

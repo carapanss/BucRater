@@ -1,18 +1,20 @@
-import { useState } from 'react';
-import { ask } from '@tauri-apps/plugin-dialog';
+import { useEffect, useState } from 'react';
+import { ask, open } from '@tauri-apps/plugin-dialog';
 import { useBooksStore } from '../store/useBooksStore';
 import { useGoogleBooksSearch } from '../hooks/useGoogleBooksSearch';
-import { cacheCover } from '../api/covers';
+import { importCover, resolveCoverSrc } from '../api/covers';
+import { listBooks } from '../api/books';
 import { StarRating } from '../components/StarRating';
 import { MonthYearPicker } from '../components/MonthYearPicker';
 import { TagPicker } from '../components/TagPicker';
 import { RereadCounter } from '../components/RereadCounter';
 import { QuotesPanel } from '../components/QuotesPanel';
-import type { Book, BookStatus, BookUpdate, GoogleBooksSuggestion } from '../types';
+import type { Book, BookStatus, GoogleBooksSuggestion } from '../types';
 
 interface BookFormViewProps {
   book: Book | null;
   onDone: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
 interface FormState {
@@ -26,6 +28,7 @@ interface FormState {
   addedYear: number | null;
   addedMonth: number | null;
   pageCount: number | null;
+  currentPage: number | null;
   publicationYear: number | null;
   language: string | null;
   seriesName: string;
@@ -47,6 +50,7 @@ function toFormState(book: Book | null): FormState {
       addedYear: now.getFullYear(),
       addedMonth: now.getMonth() + 1,
       pageCount: null,
+      currentPage: null,
       publicationYear: null,
       language: null,
       seriesName: '',
@@ -65,6 +69,7 @@ function toFormState(book: Book | null): FormState {
     addedYear: book.addedYear,
     addedMonth: book.addedMonth,
     pageCount: book.pageCount,
+    currentPage: book.currentPage,
     publicationYear: book.publicationYear,
     language: book.language,
     seriesName: book.seriesName ?? '',
@@ -73,8 +78,9 @@ function toFormState(book: Book | null): FormState {
   };
 }
 
-export function BookFormView({ book, onDone }: BookFormViewProps) {
-  const [form, setForm] = useState<FormState>(() => toFormState(book));
+export function BookFormView({ book, onDone, onDirtyChange }: BookFormViewProps) {
+  const [initialForm] = useState<FormState>(() => toFormState(book));
+  const [form, setForm] = useState<FormState>(() => initialForm);
   const [titleQuery, setTitleQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const { suggestions, loading: searchLoading, error: searchError } = useGoogleBooksSearch(titleQuery);
@@ -85,12 +91,20 @@ export function BookFormView({ book, onDone }: BookFormViewProps) {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [rereadCount, setRereadCount] = useState(book?.rereadCount ?? 0);
+  const [manualCoverPath, setManualCoverPath] = useState<string | null>(null);
 
   const addBook = useBooksStore((s) => s.add);
   const updateBook = useBooksStore((s) => s.update);
+  const setCover = useBooksStore((s) => s.setCover);
   const setTags = useBooksStore((s) => s.setTags);
   const removeBook = useBooksStore((s) => s.remove);
   const incrementReread = useBooksStore((s) => s.incrementReread);
+  const decrementReread = useBooksStore((s) => s.decrementReread);
+
+  useEffect(() => {
+    const dirty = manualCoverPath !== null || JSON.stringify(form) !== JSON.stringify(initialForm);
+    onDirtyChange?.(dirty);
+  }, [form, initialForm, manualCoverPath, onDirtyChange]);
 
   function applySuggestion(s: GoogleBooksSuggestion) {
     setForm((f) => ({
@@ -103,34 +117,22 @@ export function BookFormView({ book, onDone }: BookFormViewProps) {
       publicationYear: s.publicationYear,
       language: s.language,
     }));
+    setManualCoverPath(null);
     setShowSuggestions(false);
     setShowAuthorSuggestions(false);
   }
 
-  /** Descarga y guarda localmente la portada remota de un libro ya guardado (best-effort). */
-  async function cacheCoverIfNeeded(saved: Book) {
-    if (!saved.coverUrl?.startsWith('http')) return;
-    try {
-      const localPath = await cacheCover(saved.coverUrl, saved.uuid);
-      const update: BookUpdate = {
-        title: saved.title,
-        author: saved.author,
-        rating: saved.rating,
-        notes: saved.notes,
-        status: saved.status,
-        coverUrl: localPath,
-        googleBooksId: saved.googleBooksId,
-        addedYear: saved.addedYear,
-        addedMonth: saved.addedMonth,
-        pageCount: saved.pageCount,
-        publicationYear: saved.publicationYear,
-        language: saved.language,
-        seriesName: saved.seriesName,
-        seriesIndex: saved.seriesIndex,
-      };
-      await updateBook(saved.id, update);
-    } catch {
-      // sin conexión o fallo de descarga: seguimos usando la URL remota como respaldo
+  async function chooseCover() {
+    const selected = await open({
+      multiple: false,
+      directory: false,
+      filters: [
+        { name: 'Imágenes', extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'] },
+      ],
+    });
+    if (typeof selected === 'string') {
+      setManualCoverPath(selected);
+      setFormError(null);
     }
   }
 
@@ -142,6 +144,24 @@ export function BookFormView({ book, onDone }: BookFormViewProps) {
     setFormError(null);
     setSaving(true);
     try {
+      if (!book) {
+        const normalizedTitle = normalizeBookValue(form.title);
+        const normalizedAuthor = normalizeBookValue(form.author);
+        const existingBooks = await listBooks({});
+        const duplicate = existingBooks.find(
+          (existing) =>
+            (normalizeBookValue(existing.title) === normalizedTitle &&
+              normalizeBookValue(existing.author) === normalizedAuthor) ||
+            (form.googleBooksId !== null && existing.googleBooksId === form.googleBooksId),
+        );
+        if (duplicate) {
+          const confirmed = await ask(
+            `Ya tienes guardado “${duplicate.title}” de ${duplicate.author}. ¿Quieres añadirlo de todos modos?`,
+            { title: 'Libro repetido', kind: 'warning' },
+          );
+          if (!confirmed) return;
+        }
+      }
       const seriesIndexNum = form.seriesIndex.trim() ? Number(form.seriesIndex) : null;
       const payload = {
         title: form.title.trim(),
@@ -154,6 +174,7 @@ export function BookFormView({ book, onDone }: BookFormViewProps) {
         addedYear: form.addedYear,
         addedMonth: form.addedMonth,
         pageCount: form.pageCount,
+        currentPage: form.currentPage,
         publicationYear: form.publicationYear,
         language: form.language,
         seriesName: form.seriesName.trim() || null,
@@ -161,15 +182,18 @@ export function BookFormView({ book, onDone }: BookFormViewProps) {
       };
       let saved: Book;
       if (book) {
-        saved = await updateBook(book.id, payload);
-        await setTags(book.id, form.tagIds);
+        saved = await updateBook(book.uuid, payload);
+        await setTags(book.uuid, form.tagIds);
       } else {
         saved = await addBook({ ...payload, tagIds: form.tagIds });
       }
-      await cacheCoverIfNeeded(saved);
+      if (manualCoverPath) {
+        const localPath = await importCover(manualCoverPath, saved.uuid);
+        saved = await setCover(saved.uuid, localPath);
+      }
       onDone();
-    } catch {
-      // el error ya se notificó mediante un toast
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'No se pudo guardar el libro.');
     } finally {
       setSaving(false);
     }
@@ -286,7 +310,7 @@ export function BookFormView({ book, onDone }: BookFormViewProps) {
             onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as BookStatus }))}
           >
             <option value="pending">Pendiente</option>
-            <option value="reading">Leyendo</option>
+            <option value="reading">A medias</option>
             <option value="read">Leído</option>
           </select>
         </div>
@@ -311,6 +335,25 @@ export function BookFormView({ book, onDone }: BookFormViewProps) {
             }
           />
         </div>
+        {form.status === 'reading' && (
+          <div className="field">
+            <label>Página en la que te quedaste</label>
+            <input
+              className="input"
+              type="number"
+              min={0}
+              max={form.pageCount ?? undefined}
+              value={form.currentPage ?? ''}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  currentPage: e.target.value ? Number(e.target.value) : null,
+                }))
+              }
+              placeholder="Ej. 127"
+            />
+          </div>
+        )}
         <div className="field">
           <label>Año de publicación</label>
           <input
@@ -356,6 +399,33 @@ export function BookFormView({ book, onDone }: BookFormViewProps) {
       </div>
 
       <div className="field">
+        <label>Portada</label>
+        <div className="cover-picker">
+          {form.coverUrl && !manualCoverPath && (
+            <img className="cover-preview" src={resolveCoverSrc(form.coverUrl)} alt="Portada actual" />
+          )}
+          <div className="cover-picker-actions">
+            <button type="button" className="btn btn-sm" disabled={saving} onClick={() => void chooseCover()}>
+              Elegir imagen
+            </button>
+            {manualCoverPath ? (
+              <span className="cover-selected-name">{manualCoverPath.split(/[\\/]/).pop()}</span>
+            ) : form.coverUrl ? (
+              <span className="field-hint">Portada actual</span>
+            ) : (
+              <span className="field-hint">Sin portada</span>
+            )}
+            {manualCoverPath && (
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setManualCoverPath(null)}>
+                Cancelar
+              </button>
+            )}
+          </div>
+        </div>
+        <p className="field-hint">JPG, PNG, GIF, WebP o BMP. Se sincronizará con tus otros dispositivos.</p>
+      </div>
+
+      <div className="field">
         <label>Notas</label>
         <textarea
           className="input"
@@ -379,6 +449,14 @@ export function BookFormView({ book, onDone }: BookFormViewProps) {
               try {
                 await incrementReread(book.id);
                 setRereadCount((c) => c + 1);
+              } catch {
+                // el error ya se notificó mediante un toast
+              }
+            }}
+            onDecrement={async () => {
+              try {
+                await decrementReread(book.id);
+                setRereadCount((c) => Math.max(0, c - 1));
               } catch {
                 // el error ya se notificó mediante un toast
               }
@@ -408,4 +486,13 @@ export function BookFormView({ book, onDone }: BookFormViewProps) {
       </div>
     </div>
   );
+}
+
+function normalizeBookValue(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLocaleLowerCase();
 }

@@ -36,7 +36,10 @@ fn perform_backup(repo: &SqliteRepository, dir: &Path) -> Result<(), AppError> {
     std::fs::create_dir_all(dir)?;
     let data = BackupRepository::export_all(repo)?;
     let json = serde_json::to_string_pretty(&data)?;
-    let filename = format!("auto-backup-{}.json", chrono::Local::now().format("%Y%m%d-%H%M%S"));
+    let filename = format!(
+        "auto-backup-{}.json",
+        chrono::Local::now().format("%Y%m%d-%H%M%S")
+    );
     std::fs::write(dir.join(filename), json)?;
     prune_old_backups(dir, KEEP_LAST)
 }

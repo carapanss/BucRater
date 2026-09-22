@@ -45,7 +45,7 @@ export function SearchFilterBar() {
       >
         <option value="">Todos los estados</option>
         <option value="pending">Pendiente</option>
-        <option value="reading">Leyendo</option>
+        <option value="reading">A medias</option>
         <option value="read">Leído</option>
       </select>
       <select

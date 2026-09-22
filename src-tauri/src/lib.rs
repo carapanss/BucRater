@@ -38,8 +38,13 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_log::Builder::new().build())
         .setup(|app| {
+            #[cfg(desktop)]
+            app.handle()
+                .plugin(tauri_plugin_updater::Builder::new().build())?;
+
             let app_data_dir = app
                 .path()
                 .app_data_dir()
@@ -57,11 +62,13 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::books::add_book,
             commands::books::update_book,
+            commands::books::set_book_cover,
             commands::books::delete_book,
             commands::books::get_book,
             commands::books::list_books,
             commands::books::set_book_tags,
             commands::books::increment_reread,
+            commands::books::decrement_reread,
             commands::tags::list_tags,
             commands::tags::create_tag,
             commands::tags::rename_tag,
@@ -79,6 +86,8 @@ pub fn run() {
             commands::export::export_csv,
             commands::export::export_markdown,
             commands::covers::cache_cover,
+            commands::covers::import_cover,
+            commands::covers::lookup_cover_urls,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

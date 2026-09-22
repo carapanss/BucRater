@@ -19,6 +19,7 @@ export interface Book {
   addedYear: number | null;
   addedMonth: number | null;
   pageCount: number | null;
+  currentPage: number | null;
   publicationYear: number | null;
   language: string | null;
   seriesName: string | null;
@@ -40,6 +41,7 @@ export interface NewBook {
   addedYear: number | null;
   addedMonth: number | null;
   pageCount: number | null;
+  currentPage: number | null;
   publicationYear: number | null;
   language: string | null;
   seriesName: string | null;

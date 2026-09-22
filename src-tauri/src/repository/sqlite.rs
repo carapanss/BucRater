@@ -42,6 +42,7 @@ fn row_to_book(row: &rusqlite::Row) -> rusqlite::Result<Book> {
         added_year: row.get("added_year")?,
         added_month: row.get("added_month")?,
         page_count: row.get("page_count")?,
+        current_page: row.get("current_page")?,
         publication_year: row.get("publication_year")?,
         language: row.get("language")?,
         series_name: row.get("series_name")?,
@@ -124,6 +125,23 @@ fn fetch_book(conn: &Connection, id: i64) -> Result<Option<Book>, AppError> {
     }
 }
 
+fn fetch_book_by_uuid(conn: &Connection, uuid: &str) -> Result<Option<Book>, AppError> {
+    let book = conn
+        .query_row(
+            "SELECT * FROM books WHERE uuid = ?1",
+            params![uuid],
+            row_to_book,
+        )
+        .optional()?;
+    match book {
+        Some(mut book) => {
+            book.tags = fetch_tags_for_book(conn, book.id)?;
+            Ok(Some(book))
+        }
+        None => Ok(None),
+    }
+}
+
 fn set_tags_inner(conn: &Connection, book_id: i64, tag_ids: &[i64]) -> Result<(), AppError> {
     conn.execute("DELETE FROM book_tags WHERE book_id = ?1", params![book_id])?;
     for tag_id in tag_ids {
@@ -168,8 +186,8 @@ impl BookRepository for SqliteRepository {
             "INSERT INTO books (
                 uuid, title, author, rating, notes, status, cover_url, google_books_id,
                 added_year, added_month, page_count, publication_year, language,
-                series_name, series_index
-            ) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15)",
+                current_page, series_name, series_index
+            ) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16)",
             params![
                 new_uuid,
                 new.title,
@@ -184,6 +202,7 @@ impl BookRepository for SqliteRepository {
                 new.page_count,
                 new.publication_year,
                 new.language,
+                new.current_page,
                 new.series_name,
                 new.series_index,
             ],
@@ -196,15 +215,15 @@ impl BookRepository for SqliteRepository {
         Ok(book)
     }
 
-    fn update(&self, id: i64, changes: BookUpdate) -> Result<Book, AppError> {
+    fn update(&self, uuid: &str, changes: BookUpdate) -> Result<Book, AppError> {
         let conn = self.conn.lock().unwrap();
         conn.execute(
             "UPDATE books SET
                 title = ?1, author = ?2, rating = ?3, notes = ?4, status = ?5,
                 cover_url = ?6, google_books_id = ?7, added_year = ?8, added_month = ?9,
                 page_count = ?10, publication_year = ?11, language = ?12,
-                series_name = ?13, series_index = ?14
-             WHERE id = ?15",
+                current_page = ?13, series_name = ?14, series_index = ?15
+             WHERE uuid = ?16",
             params![
                 changes.title,
                 changes.author,
@@ -218,12 +237,32 @@ impl BookRepository for SqliteRepository {
                 changes.page_count,
                 changes.publication_year,
                 changes.language,
+                changes.current_page,
                 changes.series_name,
                 changes.series_index,
-                id,
+                uuid,
             ],
         )?;
-        fetch_book(&conn, id)?.ok_or_else(|| AppError::Other("libro no encontrado".into()))
+        fetch_book_by_uuid(&conn, uuid)?
+            .ok_or_else(|| AppError::Other("libro no encontrado".into()))
+    }
+
+    fn set_cover_url(&self, uuid: &str, cover_url: String) -> Result<Book, AppError> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "UPDATE books SET cover_url = ?1 WHERE uuid = ?2",
+            params![cover_url, uuid],
+        )?;
+        conn.query_row(
+            "SELECT id FROM books WHERE uuid = ?1",
+            params![uuid],
+            |row| row.get::<_, i64>(0),
+        )
+        .optional()?
+        .map(|id| fetch_book(&conn, id))
+        .transpose()?
+        .flatten()
+        .ok_or_else(|| AppError::Other("libro no encontrado".into()))
     }
 
     fn delete(&self, id: i64) -> Result<(), AppError> {
@@ -302,8 +341,16 @@ impl BookRepository for SqliteRepository {
         Ok(books)
     }
 
-    fn set_tags(&self, book_id: i64, tag_ids: Vec<i64>) -> Result<(), AppError> {
+    fn set_tags(&self, uuid: &str, tag_ids: Vec<i64>) -> Result<(), AppError> {
         let conn = self.conn.lock().unwrap();
+        let book_id: i64 = conn
+            .query_row(
+                "SELECT id FROM books WHERE uuid = ?1",
+                params![uuid],
+                |row| row.get(0),
+            )
+            .optional()?
+            .ok_or_else(|| AppError::Other("libro no encontrado".into()))?;
         set_tags_inner(&conn, book_id, &tag_ids)
     }
 
@@ -311,6 +358,15 @@ impl BookRepository for SqliteRepository {
         let conn = self.conn.lock().unwrap();
         conn.execute(
             "UPDATE books SET reread_count = reread_count + 1 WHERE id = ?1",
+            params![book_id],
+        )?;
+        fetch_book(&conn, book_id)?.ok_or_else(|| AppError::Other("libro no encontrado".into()))
+    }
+
+    fn decrement_reread(&self, book_id: i64) -> Result<Book, AppError> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "UPDATE books SET reread_count = MAX(reread_count - 1, 0) WHERE id = ?1",
             params![book_id],
         )?;
         fetch_book(&conn, book_id)?.ok_or_else(|| AppError::Other("libro no encontrado".into()))
@@ -452,7 +508,11 @@ impl MetricsRepository for SqliteRepository {
             |row| row.get(0),
         )?;
         let total_pages: i64 = conn.query_row(
-            "SELECT COALESCE(SUM(page_count), 0) FROM books WHERE added_year = ?1",
+            "SELECT COALESCE(SUM(CASE
+                WHEN status = 'read' THEN COALESCE(page_count, 0)
+                WHEN status = 'reading' THEN COALESCE(current_page, 0)
+                ELSE 0
+             END), 0) FROM books WHERE added_year = ?1",
             params![year],
             |row| row.get(0),
         )?;
@@ -497,8 +557,12 @@ impl MetricsRepository for SqliteRepository {
 
         let raw_pages: Vec<(i64, i64)> = {
             let mut stmt = conn.prepare(
-                "SELECT added_month, COALESCE(SUM(page_count), 0) FROM books \
-                 WHERE added_year = ?1 AND page_count IS NOT NULL GROUP BY added_month",
+                "SELECT added_month, COALESCE(SUM(CASE
+                    WHEN status = 'read' THEN COALESCE(page_count, 0)
+                    WHEN status = 'reading' THEN COALESCE(current_page, 0)
+                    ELSE 0
+                 END), 0) FROM books \
+                 WHERE added_year = ?1 GROUP BY added_month",
             )?;
             let rows = stmt
                 .query_map(params![year], |row| Ok((row.get(0)?, row.get(1)?)))?
@@ -517,7 +581,11 @@ impl MetricsRepository for SqliteRepository {
                 |row| row.get(0),
             )?;
             let pages: i64 = conn.query_row(
-                "SELECT COALESCE(SUM(page_count), 0) FROM books WHERE added_year = ?1",
+                "SELECT COALESCE(SUM(CASE
+                    WHEN status = 'read' THEN COALESCE(page_count, 0)
+                    WHEN status = 'reading' THEN COALESCE(current_page, 0)
+                    ELSE 0
+                 END), 0) FROM books WHERE added_year = ?1",
                 params![y],
                 |row| row.get(0),
             )?;
@@ -667,8 +735,8 @@ fn import_all_tx(
             tx.execute(
                 "UPDATE books SET title=?1, author=?2, rating=?3, notes=?4, status=?5, \
                  cover_url=?6, google_books_id=?7, added_year=?8, added_month=?9, \
-                 page_count=?10, publication_year=?11, language=?12, series_name=?13, \
-                 series_index=?14, reread_count=?15, updated_at=?16 WHERE id=?17",
+                 page_count=?10, publication_year=?11, language=?12, current_page=?13, \
+                 series_name=?14, series_index=?15, reread_count=?16, updated_at=?17 WHERE id=?18",
                 params![
                     book.title,
                     book.author,
@@ -682,6 +750,7 @@ fn import_all_tx(
                     book.page_count,
                     book.publication_year,
                     book.language,
+                    book.current_page,
                     book.series_name,
                     book.series_index,
                     book.reread_count,
@@ -696,8 +765,8 @@ fn import_all_tx(
                 "INSERT INTO books (
                     uuid, title, author, rating, notes, status, cover_url, google_books_id,
                     added_year, added_month, page_count, publication_year, language,
-                    series_name, series_index, reread_count, created_at, updated_at
-                ) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18)",
+                    current_page, series_name, series_index, reread_count, created_at, updated_at
+                ) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19)",
                 params![
                     book.uuid,
                     book.title,
@@ -712,6 +781,7 @@ fn import_all_tx(
                     book.page_count,
                     book.publication_year,
                     book.language,
+                    book.current_page,
                     book.series_name,
                     book.series_index,
                     book.reread_count,
@@ -791,7 +861,11 @@ impl BackupRepository for SqliteRepository {
             .into_iter()
             .map(|book| {
                 let quotes = quotes_map.remove(&book.id).unwrap_or_default();
-                BackupBook { book, quotes }
+                BackupBook {
+                    book,
+                    quotes,
+                    cover_asset: None,
+                }
             })
             .collect();
 
@@ -831,9 +905,10 @@ mod tests {
     fn test_repo() -> SqliteRepository {
         let mut conn = Connection::open_in_memory().unwrap();
         conn.pragma_update(None, "foreign_keys", true).unwrap();
-        let migrations = Migrations::new(vec![M::up(include_str!(
-            "../../migrations/001_initial.sql"
-        ))]);
+        let migrations = Migrations::new(vec![
+            M::up(include_str!("../../migrations/001_initial.sql")),
+            M::up(include_str!("../../migrations/002_current_page.sql")),
+        ]);
         migrations.to_latest(&mut conn).unwrap();
         SqliteRepository::new(conn)
     }
@@ -850,6 +925,7 @@ mod tests {
             added_year: Some(2026),
             added_month: Some(3),
             page_count: Some(250),
+            current_page: None,
             publication_year: Some(2020),
             language: Some("es".into()),
             series_name: None,
@@ -892,6 +968,7 @@ mod tests {
         let mut reading = sample_book("Libro sin terminar");
         reading.rating = None;
         reading.status = "reading".into();
+        reading.current_page = Some(80);
         BookRepository::create(&repo, reading).unwrap();
 
         let all = BookRepository::list(&repo, BookFilter::default()).unwrap();
@@ -918,6 +995,10 @@ mod tests {
         .unwrap();
         assert_eq!(by_status.len(), 1);
 
+        let metrics = MetricsRepository::year_metrics(&repo, 2026).unwrap();
+        assert_eq!(metrics.wrapped.total_pages, 330);
+        assert_eq!(metrics.reading_velocity[2].pages, 330);
+
         let by_rating = BookRepository::list(
             &repo,
             BookFilter {
@@ -934,7 +1015,7 @@ mod tests {
         let repo = test_repo();
         let tag = TagRepository::create(&repo, "Favoritos".into(), Some("#123456".into())).unwrap();
         let book = BookRepository::create(&repo, sample_book("Rayuela")).unwrap();
-        repo.set_tags(book.id, vec![tag.id]).unwrap();
+        repo.set_tags(&book.uuid, vec![tag.id]).unwrap();
         QuoteRepository::add(&repo, book.id, "Una cita memorable".into()).unwrap();
 
         let backup = repo.export_all().unwrap();
@@ -956,6 +1037,19 @@ mod tests {
     }
 
     #[test]
+    fn decrement_reread_never_goes_below_zero() {
+        let repo = test_repo();
+        let book = BookRepository::create(&repo, sample_book("Libro de prueba")).unwrap();
+
+        let unchanged = BookRepository::decrement_reread(&repo, book.id).unwrap();
+        assert_eq!(unchanged.reread_count, 0);
+
+        BookRepository::increment_reread(&repo, book.id).unwrap();
+        let decremented = BookRepository::decrement_reread(&repo, book.id).unwrap();
+        assert_eq!(decremented.reread_count, 0);
+    }
+
+    #[test]
     fn import_all_rolls_back_on_invalid_book() {
         let repo = test_repo();
         BookRepository::create(&repo, sample_book("Libro válido")).unwrap();
@@ -969,6 +1063,7 @@ mod tests {
         backup.books.push(BackupBook {
             book: invalid_book,
             quotes: vec![],
+            cover_asset: None,
         });
 
         let fresh = test_repo();
@@ -1067,10 +1162,11 @@ mod tests {
         let target = TagRepository::create(&repo, "Ciencia ficción".into(), None).unwrap();
 
         let only_source = BookRepository::create(&repo, sample_book("Solo scifi")).unwrap();
-        repo.set_tags(only_source.id, vec![source.id]).unwrap();
+        repo.set_tags(&only_source.uuid, vec![source.id]).unwrap();
 
         let both = BookRepository::create(&repo, sample_book("Con ambos")).unwrap();
-        repo.set_tags(both.id, vec![source.id, target.id]).unwrap();
+        repo.set_tags(&both.uuid, vec![source.id, target.id])
+            .unwrap();
 
         TagRepository::merge(&repo, source.id, target.id).unwrap();
 

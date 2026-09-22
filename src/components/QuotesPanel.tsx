@@ -4,7 +4,7 @@ import * as quotesApi from '../api/quotes';
 import { errorMessage, useToastStore } from '../store/useToastStore';
 import type { Quote } from '../types';
 
-export function QuotesPanel({ bookId }: { bookId: number | null }) {
+export function QuotesPanel({ bookId, readOnly = false }: { bookId: number | null; readOnly?: boolean }) {
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [draft, setDraft] = useState('');
   const [loading, setLoading] = useState(false);
@@ -62,30 +62,34 @@ export function QuotesPanel({ bookId }: { bookId: number | null }) {
             transition={{ duration: 0.15 }}
           >
             <p>&ldquo;{quote.text}&rdquo;</p>
-            <button
-              type="button"
-              className="icon-button"
-              onClick={() => handleDelete(quote.id)}
-              aria-label="Eliminar cita"
-            >
-              ✕
-            </button>
+            {!readOnly && (
+              <button
+                type="button"
+                className="icon-button"
+                onClick={() => handleDelete(quote.id)}
+                aria-label="Eliminar cita"
+              >
+                ✕
+              </button>
+            )}
           </motion.div>
         ))}
       </AnimatePresence>
       {quotes.length === 0 && <p className="empty-state">Todavía no has guardado ninguna cita.</p>}
-      <div className="quote-add-row">
-        <textarea
-          className="input"
-          rows={2}
-          placeholder="Añadir una cita o frase favorita..."
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-        />
-        <button type="button" className="btn" disabled={loading || !draft.trim()} onClick={handleAdd}>
-          Añadir
-        </button>
-      </div>
+      {!readOnly && (
+        <div className="quote-add-row">
+          <textarea
+            className="input"
+            rows={2}
+            placeholder="Añadir una cita o frase favorita..."
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+          />
+          <button type="button" className="btn" disabled={loading || !draft.trim()} onClick={handleAdd}>
+            Añadir
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -23,6 +23,8 @@ pub struct Book {
     pub added_year: Option<i64>,
     pub added_month: Option<i64>,
     pub page_count: Option<i64>,
+    #[serde(default)]
+    pub current_page: Option<i64>,
     pub publication_year: Option<i64>,
     pub language: Option<String>,
     pub series_name: Option<String>,
@@ -46,6 +48,7 @@ pub struct NewBook {
     pub added_year: Option<i64>,
     pub added_month: Option<i64>,
     pub page_count: Option<i64>,
+    pub current_page: Option<i64>,
     pub publication_year: Option<i64>,
     pub language: Option<String>,
     pub series_name: Option<String>,
@@ -67,6 +70,7 @@ pub struct BookUpdate {
     pub added_year: Option<i64>,
     pub added_month: Option<i64>,
     pub page_count: Option<i64>,
+    pub current_page: Option<i64>,
     pub publication_year: Option<i64>,
     pub language: Option<String>,
     pub series_name: Option<String>,
@@ -188,9 +192,18 @@ pub struct GlobalMetrics {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct CoverAsset {
+    pub data: String,
+    pub mime_type: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct BackupBook {
     pub book: Book,
     pub quotes: Vec<String>,
+    #[serde(default)]
+    pub cover_asset: Option<CoverAsset>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

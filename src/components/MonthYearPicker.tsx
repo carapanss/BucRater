@@ -22,11 +22,16 @@ const MONTHS = [
 export function MonthYearPicker({ year, month, onChange }: MonthYearPickerProps) {
   const isUndefined = year === null;
   const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 15 }, (_, i) => currentYear - i);
+  const years = Array.from(
+    new Set([
+      ...Array.from({ length: 15 }, (_, i) => currentYear - i),
+      ...(year !== null ? [year] : []),
+    ]),
+  ).sort((a, b) => b - a);
 
   return (
     <div className="field">
-      <label>Fecha de añadido</label>
+      <label>Fecha de lectura</label>
       <div className="field-checkbox">
         <input
           type="checkbox"

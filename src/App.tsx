@@ -5,6 +5,7 @@ import { useTagsStore } from './store/useTagsStore';
 import { useBooksStore } from './store/useBooksStore';
 import { errorMessage, useToastStore } from './store/useToastStore';
 import { ThemeToggle } from './components/ThemeToggle';
+import { UpdateButton } from './components/UpdateButton';
 import { ToastStack } from './components/ToastStack';
 import { ExportMenu } from './components/ExportMenu';
 import { BookListView } from './views/BookListView';
@@ -36,16 +37,22 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
+      // La biblioteca local debe aparecer sin esperar a la red. La sincronización continúa
+      // en segundo plano y solo recargamos si realmente ha traído cambios remotos.
+      try {
+        await Promise.all([loadBooks(), loadTags()]);
+      } finally {
+        if (!cancelled) setSyncReady(true);
+      }
+
       try {
         const result = await syncLibrary();
         if (result.connected && result.changed) {
           pushToast(`Biblioteca sincronizada: ${result.bookCount} libros disponibles.`);
+          await Promise.all([loadBooks(), loadTags()]);
         }
       } catch (err) {
-        pushToast(`No se pudo iniciar la sincronización: ${errorMessage(err)}`, 'error');
-      } finally {
-        await Promise.all([loadBooks(), loadTags()]);
-        if (!cancelled) setSyncReady(true);
+        pushToast(`No se pudo sincronizar en segundo plano: ${errorMessage(err)}`, 'error');
       }
     })();
 
@@ -88,6 +95,7 @@ export default function App() {
             Importar
           </button>
           <ExportMenu />
+          <UpdateButton />
           <ThemeToggle />
         </div>
       </header>

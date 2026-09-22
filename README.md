@@ -17,6 +17,7 @@ Construida con [Tauri](https://tauri.app) (Rust) + React + TypeScript.
 - Backups automáticos periódicos, además del export manual.
 - Sincronización automática con un servidor privado por Tailscale, con SQLite local como caché offline.
 - Tema claro/oscuro.
+- Comprobación automática de actualizaciones y botón para instalarlas desde la app.
 
 ## Stack técnico
 
@@ -47,11 +48,24 @@ npm run tauri build
 
 Genera los instaladores nativos (`.deb`/`.AppImage`, `.msi`/`.exe`, `.dmg` según la plataforma) en `src-tauri/target/release/bundle`.
 
+## Publicar una actualización
+
+Las actualizaciones se distribuyen mediante GitHub Releases. Para publicar una nueva versión:
+
+1. Incrementa la versión en `package.json` y `src-tauri/Cargo.toml`.
+2. Copia la clave privada local `.tauri/bucrater.key` al secreto de GitHub
+   `TAURI_SIGNING_PRIVATE_KEY` (la clave no se guarda en el repositorio).
+3. Crea y sube una etiqueta con el mismo número, por ejemplo `v0.2.0`.
+
+El workflow de release compila los instaladores firmados y genera `latest.json`; BucRater lo
+consulta al arrancar y muestra el botón `Actualizar` cuando hay una versión nueva. En Linux y
+macOS hay que reiniciar la aplicación después de instalarla.
+
 ## Datos y privacidad
 
 - La base de datos (`bucrater.db`) se guarda en el directorio de datos de la app que gestiona el sistema operativo (por ejemplo, `~/.local/share/com.bucrater.app` en Linux). Nunca sale de tu equipo salvo que exportes un backup manualmente.
 - Al escribir un título o un autor en el formulario de "Añadir libro", la app consulta las APIs públicas de **Google Books** y **Open Library** para sugerir portada, autor, páginas e idioma. Solo se envía el texto que escribes en ese campo.
-- Las portadas elegidas se descargan una vez y se guardan en `.../com.bucrater.app/covers/`.
+- Las portadas sugeridas o elegidas manualmente se guardan en `.../com.bucrater.app/covers/`.
 - Además de los backups manuales (`Importar` / `Exportar` en la barra superior, en JSON/CSV/Markdown), la app guarda automáticamente una copia de seguridad en `.../com.bucrater.app/backups/` (como mucho una cada 12 horas, conservando las últimas 14). Ningún backup sale de tu equipo salvo que tú lo compartas.
 
 ## Sincronización entre dispositivos
@@ -59,8 +73,11 @@ Genera los instaladores nativos (`.deb`/`.AppImage`, `.msi`/`.exe`, `.dmg` segú
 El servidor de sincronización se configura por defecto en `http://100.74.38.58:8092`,
 la dirección Tailscale privada del servidor doméstico. Al iniciar la aplicación,
 BucRater descarga la biblioteca central y, después de cada cambio, sube el snapshot
-actual en segundo plano. Si el servidor no está disponible, la aplicación sigue
-funcionando con SQLite local y reintenta al volver a abrirse.
+actual en segundo plano. Las imágenes de portada se incluyen en ese snapshot, de
+modo que una portada elegida manualmente aparece también en los demás dispositivos.
+Cada portada admite hasta 8 MB y el snapshot completo hasta 128 MB. Si el servidor
+no está disponible, la aplicación sigue funcionando con SQLite local y reintenta al
+volver a abrirse.
 
 Para cambiar el servidor o añadir un token opcional, crea `server.json` dentro del
 directorio de datos de BucRater:

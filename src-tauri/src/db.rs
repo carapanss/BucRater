@@ -13,9 +13,10 @@ pub fn init(db_path: &Path) -> Result<Connection, AppError> {
     conn.pragma_update(None, "foreign_keys", true)?;
     conn.pragma_update(None, "journal_mode", "WAL")?;
 
-    let migrations = Migrations::new(vec![M::up(include_str!(
-        "../migrations/001_initial.sql"
-    ))]);
+    let migrations = Migrations::new(vec![
+        M::up(include_str!("../migrations/001_initial.sql")),
+        M::up(include_str!("../migrations/002_current_page.sql")),
+    ]);
     migrations.to_latest(&mut conn)?;
 
     Ok(conn)

@@ -8,7 +8,7 @@ use crate::AppState;
 fn status_label(status: &str) -> &str {
     match status {
         "pending" => "Pendiente",
-        "reading" => "Leyendo",
+        "reading" => "A medias",
         "read" => "Leído",
         _ => status,
     }
@@ -54,7 +54,9 @@ pub fn export_csv(state: State<AppState>, path: String) -> Result<(), AppError> 
             status_label(&book.status).to_string(),
             book.notes.unwrap_or_default(),
             book.page_count.map(|p| p.to_string()).unwrap_or_default(),
-            book.publication_year.map(|y| y.to_string()).unwrap_or_default(),
+            book.publication_year
+                .map(|y| y.to_string())
+                .unwrap_or_default(),
             book.language.unwrap_or_default(),
             book.series_name.unwrap_or_default(),
             book.series_index.map(|i| i.to_string()).unwrap_or_default(),
@@ -95,7 +97,12 @@ pub fn export_markdown(state: State<AppState>, path: String) -> Result<(), AppEr
             });
         }
         if !book.tags.is_empty() {
-            let tag_names = book.tags.iter().map(|t| t.name.clone()).collect::<Vec<_>>().join(", ");
+            let tag_names = book
+                .tags
+                .iter()
+                .map(|t| t.name.clone())
+                .collect::<Vec<_>>()
+                .join(", ");
             meta.push(format!("Tags: {tag_names}"));
         }
         out.push_str(&meta.join(" · "));

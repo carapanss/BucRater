@@ -28,6 +28,7 @@
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": "all",
     "icon": [
       "icons/32x32.png",
@@ -36,5 +37,13 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEJGMDY2NzBBNkM5QjUwMTAKUldRUVVKdHNDbWNHdi81NzU0SURFbHBPbjh4d2dlMzNGUzZ2SFNxRE5NQzkyZmtTbXhHbnZIYnQK",
+      "endpoints": [
+        "https://github.com/carapanss/BucRater/releases/latest/download/latest.json"
+      ]
+    }
   }
 }
