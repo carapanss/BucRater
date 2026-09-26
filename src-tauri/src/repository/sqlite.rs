@@ -322,7 +322,8 @@ impl BookRepository for SqliteRepository {
                 "ORDER BY page_count IS NULL, page_count DESC, title COLLATE NOCASE ASC"
             }
             Some("title_asc") => "ORDER BY title COLLATE NOCASE ASC",
-            _ => "ORDER BY created_at DESC",
+            Some("created_desc") => "ORDER BY created_at DESC, id DESC",
+            _ => "ORDER BY added_year IS NULL, added_year DESC, added_month IS NULL, added_month DESC, created_at DESC, id DESC",
         };
         let sql = format!("SELECT * FROM books {} {}", where_sql, order_sql);
 
@@ -1110,6 +1111,49 @@ mod tests {
         .unwrap();
         assert_eq!(by_quote.len(), 1);
         assert_eq!(by_quote[0].title, "Libro con cita");
+    }
+
+    #[test]
+    fn list_defaults_to_reading_date_descending() {
+        let repo = test_repo();
+        for (title, year, month) in [
+            ("Reciente", Some(2026), Some(9)),
+            ("Anterior", Some(2025), Some(12)),
+            ("Sin mes", Some(2026), None),
+            ("Mismo año", Some(2026), Some(1)),
+            ("Sin fecha", None, None),
+        ] {
+            let mut book = sample_book(title);
+            book.added_year = year;
+            book.added_month = month;
+            BookRepository::create(&repo, book).unwrap();
+        }
+
+        for sort_by in [None, Some("read_desc".into())] {
+            let books = BookRepository::list(
+                &repo,
+                BookFilter {
+                    sort_by,
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+            let titles: Vec<_> = books.iter().map(|book| book.title.as_str()).collect();
+            assert_eq!(
+                titles,
+                ["Reciente", "Mismo año", "Sin mes", "Anterior", "Sin fecha"]
+            );
+        }
+
+        let books = BookRepository::list(
+            &repo,
+            BookFilter {
+                sort_by: Some("created_desc".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(books[0].title, "Sin fecha");
     }
 
     #[test]

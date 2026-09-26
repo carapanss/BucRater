@@ -51,7 +51,7 @@ export interface NewBook {
 
 export type BookUpdate = Omit<NewBook, 'tagIds'>;
 
-export type BookSortBy = 'created_desc' | 'rating_desc' | 'pages_desc' | 'title_asc';
+export type BookSortBy = 'read_desc' | 'created_desc' | 'rating_desc' | 'pages_desc' | 'title_asc';
 
 export interface BookFilter {
   searchText?: string | null;

@@ -3,7 +3,8 @@ import { useBooksStore } from '../store/useBooksStore';
 import type { BookSortBy, BookStatus } from '../types';
 
 const SORT_OPTIONS: { value: BookSortBy; label: string }[] = [
-  { value: 'created_desc', label: 'Más recientes primero' },
+  { value: 'read_desc', label: 'Lecturas más recientes' },
+  { value: 'created_desc', label: 'Añadidos más recientes' },
   { value: 'rating_desc', label: 'Mejor valorados' },
   { value: 'pages_desc', label: 'Más páginas' },
   { value: 'title_asc', label: 'Título (A-Z)' },
@@ -64,7 +65,7 @@ export function SearchFilterBar() {
       </select>
       <select
         className="input"
-        value={filter.sortBy ?? 'created_desc'}
+        value={filter.sortBy ?? 'read_desc'}
         onChange={(e) => setFilter({ ...filter, sortBy: e.target.value as BookSortBy })}
       >
         {SORT_OPTIONS.map((opt) => (
