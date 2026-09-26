@@ -1,7 +1,7 @@
 {
   "name": "bucrater",
   "private": true,
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Registro personal de libros leídos, construido con Tauri + React.",
   "license": "MIT",
   "type": "module",
