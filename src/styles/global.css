@@ -12,9 +12,7 @@ body {
   margin: 0;
   background-color: var(--bg);
   /* trama de lino: urdimbre y trama finísimas, solo perceptibles de cerca */
-  background-image:
-    repeating-linear-gradient(0deg, var(--weave) 0 1px, transparent 1px 3px),
-    repeating-linear-gradient(90deg, var(--weave) 0 1px, transparent 1px 3px);
+  background-image: var(--tex-ground);
   color: var(--text);
   font-family: var(--font-ui);
   font-size: 14px;
@@ -98,9 +96,7 @@ textarea {
   flex-shrink: 0;
   color: var(--on-cloth);
   background-color: var(--cloth-green);
-  background-image:
-    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 3px),
-    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.08) 0 1px, transparent 1px 3px);
+  background-image: var(--tex-cloth);
   box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.04);
   z-index: 5;
 }
@@ -317,7 +313,7 @@ select.cloth-button option {
 /* botón principal: tela burdeos con el texto en blanco roto, como una etiqueta encolada */
 .btn-primary {
   background-color: var(--primary);
-  background-image: repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.07) 0 1px, transparent 1px 3px);
+  background-image: var(--tex-cloth);
   border-color: transparent;
   color: var(--on-primary);
   font-weight: 640;
@@ -531,9 +527,6 @@ input[type='checkbox'] {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(12, 18, 14, 0.5);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -930,15 +923,8 @@ input[type='checkbox'] {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(
-    90deg,
-    rgba(0, 0, 0, 0.28) 0,
-    rgba(255, 255, 255, 0.18) 2.5%,
-    rgba(0, 0, 0, 0.12) 5%,
-    transparent 9%,
-    transparent 92%,
-    rgba(0, 0, 0, 0.12) 100%
-  );
+  /* bisagra discreta: solo una sombra junto al lomo, para no ensuciar la portada */
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.18) 0, rgba(0, 0, 0, 0.06) 3%, transparent 6%);
   border-radius: inherit;
 }
 .book-card-cover img,
@@ -993,7 +979,6 @@ input[type='checkbox'] {
   position: relative;
   width: 100%;
   height: 100%;
-  container-type: inline-size;
 }
 .cloth-cover {
   position: absolute;
@@ -1007,9 +992,7 @@ input[type='checkbox'] {
   text-align: center;
   color: var(--foil);
   background-color: var(--book-cloth, var(--cloth-green));
-  background-image:
-    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 3px),
-    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.1) 0 1px, transparent 1px 3px);
+  background-image: var(--tex-cloth);
 }
 /* marco estampado en seco */
 .cloth-cover::before {
@@ -1023,7 +1006,7 @@ input[type='checkbox'] {
 .cloth-cover-title {
   position: relative;
   font-family: var(--font-stamp);
-  font-size: clamp(11px, 12.5cqi, 21px);
+  font-size: var(--cloth-title-size, 15px);
   line-height: 1.12;
   hyphens: auto;
   -webkit-hyphens: auto;
@@ -1043,7 +1026,7 @@ input[type='checkbox'] {
 }
 .cloth-cover-author {
   position: relative;
-  font-size: clamp(8.5px, 6.6cqi, 11px);
+  font-size: 9.5px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: color-mix(in oklab, var(--foil), white 25%);
@@ -1138,7 +1121,7 @@ input[type='checkbox'] {
       rgba(255, 255, 255, 0.02) 50%,
       rgba(0, 0, 0, 0.22) 100%
     ),
-    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 3px);
+    var(--tex-cloth);
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2), 2px 0 3px -1px rgba(0, 0, 0, 0.25);
   cursor: pointer;
   overflow: hidden;
@@ -1323,9 +1306,7 @@ input[type='checkbox'] {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background-image:
-    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.07) 0 1px, transparent 1px 3px),
-    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.12) 0 1px, transparent 1px 3px);
+  background-image: var(--tex-cloth);
 }
 .color-swatch input {
   position: absolute;
@@ -1563,7 +1544,7 @@ input[type='checkbox'] {
   width: 100%;
   height: 100%;
   background-color: var(--accent);
-  background-image: repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.1) 0 1px, transparent 1px 3px);
+  background-image: var(--tex-cloth);
   border-radius: 2px;
   transform-origin: left;
 }
@@ -1666,9 +1647,7 @@ input[type='checkbox'] {
   position: relative;
   color: var(--on-cloth);
   background-color: var(--cloth-green);
-  background-image:
-    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 3px),
-    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.09) 0 1px, transparent 1px 3px);
+  background-image: var(--tex-cloth);
   border-radius: 4px 10px 10px 4px;
   padding: 40px 44px 30px 56px;
   margin-bottom: 40px;
@@ -2178,11 +2157,6 @@ input[type='checkbox'] {
 
 .cover-image-root img {
   position: relative;
-  opacity: 0;
-  transition: opacity 0.45s var(--ease-out);
-}
-.cover-image-root img.is-loaded {
-  opacity: 1;
 }
 
 .modal-paper {
@@ -2274,12 +2248,15 @@ input[type='search']::-webkit-search-cancel-button {
 }
 
 /* lomos anchos: el título puede ocupar dos columnas antes de recortarse */
+/*
+ * Sin -webkit-box: WebKitGTK dibuja en espejo el texto vertical recortado con line-clamp.
+ * Dos columnas como máximo (2 × interlineado) y el sobrante se oculta.
+ */
 .book-spine.is-wide .spine-title {
   white-space: normal;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
   text-overflow: clip;
+  max-width: calc(2 * 1.05em);
+  overflow-wrap: break-word;
 }
 .book-spine.is-long .spine-title {
   font-size: 12.5px;
@@ -2350,4 +2327,19 @@ input[type='search']::-webkit-search-cancel-button {
 }
 .modal-content.has-endpaper .modal-header .icon-button:hover {
   background: rgba(0, 0, 0, 0.38);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 18, 14, 0.55);
+}
+
+.book-detail-cover {
+  --cloth-title-size: 17px;
+}
+@media (max-width: 560px) {
+  .shelf {
+    --cloth-title-size: 13px;
+  }
 }

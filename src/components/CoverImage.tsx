@@ -37,7 +37,6 @@ export function CoverImage({ book }: { book: CoverBook }) {
   const [sourceIndex, setSourceIndex] = useState(0);
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupTrigger, setLookupTrigger] = useState(0);
-  const [loaded, setLoaded] = useState<string | null>(null);
 
   useEffect(() => {
     const element = rootRef.current;
@@ -131,9 +130,7 @@ export function CoverImage({ book }: { book: CoverBook }) {
         key={source}
         src={source}
         alt={book.title}
-        className={loaded === source ? 'is-loaded' : undefined}
         onLoad={() => {
-          setLoaded(source);
           if (isRemoteUrl(source)) {
             void cacheRemoteCover(book, source, setCover).catch(() => {
               // Si la caché falla, la imagen remota sigue visible como respaldo.

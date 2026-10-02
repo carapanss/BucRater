@@ -28,12 +28,16 @@ export function Modal({ title, onClose, children, variant = 'sheet', cloth }: Mo
     <motion.div
       className="modal-overlay"
       layoutScroll
-      initial={{ backgroundColor: 'rgba(12, 18, 14, 0)', backdropFilter: 'blur(0px)' }}
-      animate={{ backgroundColor: 'rgba(12, 18, 14, 0.5)', backdropFilter: 'blur(3px)' }}
-      exit={{ backgroundColor: 'rgba(12, 18, 14, 0)', backdropFilter: 'blur(0px)' }}
-      transition={{ duration: 0.3, ease: easeOutExpo }}
       onClick={onClose}
     >
+      {/* Velo aparte: solo se anima su opacidad, que es barato de componer */}
+      <motion.div
+        className="modal-backdrop"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.25, ease: easeOutExpo }}
+      />
       {/*
         En la ficha de libro el contenedor no se desvanece: si lo hiciera, la portada que vuela
         dentro se desvanecería con él. Lo que aparece es el papel (capa de fondo) y cada bloque.

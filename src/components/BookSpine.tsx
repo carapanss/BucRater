@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import { memo, type CSSProperties } from 'react';
 import { motion } from 'framer-motion';
 import type { Book } from '../types';
 import { clothFor, spineMetrics } from '../lib/cloth';
@@ -9,17 +9,17 @@ interface BookSpineProps {
   book: Book;
   index: number;
   hidden: boolean;
-  onClick: () => void;
+  onSelect: (uuid: string) => void;
 }
 
 /** Un libro de lomo: el grosor sale de sus páginas; la tela, de su primer tag. */
-export function BookSpine({ book, index, hidden, onClick }: BookSpineProps) {
+// Memorizado: abrir o cerrar una ficha solo vuelve a pintar el libro afectado, no toda la estantería.
+export const BookSpine = memo(function BookSpine({ book, index, hidden, onSelect }: BookSpineProps) {
   const { width, height } = spineMetrics(book);
 
   return (
     <motion.div
       className="spine-slot"
-      layout="position"
       transition={springFirm}
       initial={{ opacity: 0, y: -24 }}
       animate={{ opacity: 1, y: 0, transition: { duration: 0.55, ease: easeOutExpo, delay: Math.min(index, 30) * 0.018 } }}
@@ -32,7 +32,7 @@ export function BookSpine({ book, index, hidden, onClick }: BookSpineProps) {
         whileHover={{ y: -12, transition: springFirm }}
         whileTap={{ y: -6 }}
         transition={springFirm}
-        onClick={onClick}
+        onClick={() => onSelect(book.uuid)}
         aria-label={`${book.title}, de ${book.author}. ${STATUS_LABEL[book.status]}${
           book.rating !== null ? `, ${book.rating} de 5` : ''
         }`}
@@ -51,4 +51,4 @@ export function BookSpine({ book, index, hidden, onClick }: BookSpineProps) {
       </motion.button>
     </motion.div>
   );
-}
+});

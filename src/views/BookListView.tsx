@@ -120,7 +120,7 @@ export function BookListView() {
                     book={book}
                     index={index}
                     hidden={book.uuid === selectedBookUuid}
-                    onClick={() => setSelectedBookUuid(book.uuid)}
+                    onSelect={setSelectedBookUuid}
                   />
                 ))}
               </AnimatePresence>
@@ -134,7 +134,7 @@ export function BookListView() {
                     book={book}
                     index={index}
                     hidden={book.uuid === selectedBookUuid}
-                    onClick={() => setSelectedBookUuid(book.uuid)}
+                    onSelect={setSelectedBookUuid}
                   />
                 ))}
               </AnimatePresence>

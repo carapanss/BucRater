@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import { memo, type CSSProperties } from 'react';
 import { motion } from 'framer-motion';
 import type { Book } from '../types';
 import { CoverImage } from './CoverImage';
@@ -11,21 +11,21 @@ interface BookCardProps {
   book: Book;
   index: number;
   hidden: boolean;
-  onClick: () => void;
+  onSelect: (uuid: string) => void;
 }
 
-export function BookCard({ book, index, hidden, onClick }: BookCardProps) {
+// Memorizado: abrir o cerrar una ficha solo vuelve a pintar el libro afectado, no toda la estantería.
+export const BookCard = memo(function BookCard({ book, index, hidden, onSelect }: BookCardProps) {
   return (
     <motion.button
       type="button"
-      layout="position"
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0, transition: { duration: 0.5, ease: easeOutExpo, delay: Math.min(index, 14) * 0.03 } }}
       exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.15 } }}
       transition={springFirm}
       className="book-card"
       style={{ '--book-cloth': clothFor(book) } as CSSProperties}
-      onClick={onClick}
+      onClick={() => onSelect(book.uuid)}
       aria-label={`${book.title}, de ${book.author}`}
     >
       <div className="book-card-stage">
@@ -34,8 +34,9 @@ export function BookCard({ book, index, hidden, onClick }: BookCardProps) {
           className="book-card-cover"
           layoutId={`cover-${book.uuid}`}
           style={{ visibility: hidden ? 'hidden' : 'visible' }}
-          whileHover={{ y: -7, rotate: -0.6, transition: springFirm }}
-          whileTap={{ y: -3, scale: 0.985 }}
+          // Solo desplazamiento entero: girar o escalar una portada la remuestrea y la emborrona.
+          whileHover={{ y: -6, transition: springFirm }}
+          whileTap={{ y: -2 }}
           transition={springFirm}
         >
           <CoverImage book={book} />
@@ -57,4 +58,4 @@ export function BookCard({ book, index, hidden, onClick }: BookCardProps) {
       </div>
     </motion.button>
   );
-}
+});

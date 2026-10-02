@@ -23,7 +23,9 @@
 
   /* lino y papel */
   --bg: #e7e8e0;
-  --weave: rgba(36, 65, 47, 0.045);
+  /* tramas en mosaico de 3×3 px: se pintan mucho más rápido que los degradados repetidos */
+  --tex-ground: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAYAAABWKLW/AAAAB3RJTUUH6goCDxcQiNqRoQAAABVJREFUCNdjVHHU52aAAWQOEwMSAAAmCQFCfdV4/QAAAABJRU5ErkJggg==');
+  --tex-cloth: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAYAAABWKLW/AAAAB3RJTUUH6goCDxcQiNqRoQAAACJJREFUCNdNwUERACAMA7CUQwX+HU5A9yUJXtuBC0kGjs8ClboFCHM9Tz8AAAAASUVORK5CYII=');
   --bg-elevated: #fbfbf7;
   --bg-sunken: #efefe8;
   --bg-hover: #dfe1d7;
@@ -78,7 +80,7 @@
   --on-cloth-muted: #a9b5a6;
 
   --bg: #141815;
-  --weave: rgba(220, 189, 116, 0.025);
+  --tex-ground: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAYAAABWKLW/AAAAB3RJTUUH6goCDxcQiNqRoQAAABVJREFUCNdjvLO3hI0BBpA5TAxIAAB/pwQqAUwUHwAAAABJRU5ErkJggg==');
   --bg-elevated: #1d221e;
   --bg-sunken: #181c19;
   --bg-hover: #262c27;
