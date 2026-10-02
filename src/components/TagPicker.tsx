@@ -1,4 +1,6 @@
 import { useTagsStore } from '../store/useTagsStore';
+import type { CSSProperties } from 'react';
+import { motion } from 'framer-motion';
 import type { Tag } from '../types';
 
 interface TagPickerProps {
@@ -18,20 +20,24 @@ export function TagPicker({ selectedIds, onChange }: TagPickerProps) {
   }
 
   if (tags.length === 0) {
-    return <p className="empty-state">Todavía no tienes tags. Créalos en la pestaña Tags.</p>;
+    return <p className="field-hint">Todavía no tienes tags. Créalos en la pestaña Tags.</p>;
   }
 
   return (
     <div className="tag-picker-list">
       {tags.map((tag) => (
-        <button
+        <motion.button
           key={tag.id}
           type="button"
+          aria-pressed={selectedIds.includes(tag.id)}
           className={`tag-chip${selectedIds.includes(tag.id) ? ' selected' : ''}`}
+          style={{ '--tag-color': tag.color ?? undefined } as CSSProperties}
+          whileTap={{ scale: 0.94 }}
           onClick={() => toggle(tag)}
         >
+          <span className="tag-badge-dot" style={tag.color ? { background: tag.color } : undefined} />
           {tag.name}
-        </button>
+        </motion.button>
       ))}
     </div>
   );

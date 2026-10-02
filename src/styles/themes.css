@@ -1,39 +1,107 @@
+/*
+ * Encuadernación en tela.
+ * Tela de encuadernar como planos de color, lino como suelo, pan de oro para lo estampado.
+ */
 :root {
   color-scheme: light;
-  --accent-h: 90;
-  --accent-s: 24%;
-  --accent-l: 30%;
-  --accent: hsl(var(--accent-h), var(--accent-s), var(--accent-l));
-  --accent-soft: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.16);
-  --accent-soft-strong: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.32);
-  --on-accent: #fffdf8;
 
-  --bg: #f6f2e9;
-  --bg-elevated: #fffdf8;
-  --bg-hover: #ece5d5;
-  --text: #2b2620;
-  --text-muted: #79705f;
-  --border: #e1d8c4;
-  --danger: #a1453b;
-  --danger-soft: rgba(161, 69, 59, 0.12);
+  /* telas de encuadernar: colores de lomo y de cabecera */
+  --cloth-green: #24412f;
+  --cloth-green-deep: #1a3123;
+  --cloth-oxblood: #7b2d26;
+  --cloth-ink: #22365a;
+  --cloth-ochre: #9a6c22;
+  --cloth-plum: #4f2e4a;
+  --cloth-slate: #3e4a4f;
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --shadow: 0 2px 12px rgba(43, 38, 32, 0.08);
+  /* pan de oro: lo estampado sobre tela y sobre papel */
+  --foil: #d8b66a;
+  --foil-bright: #ecd394;
+  --foil-ink: #8a6418;
+  --on-cloth: #f3efe2;
+  --on-cloth-muted: #b9c3b4;
+
+  /* lino y papel */
+  --bg: #e7e8e0;
+  --weave: rgba(36, 65, 47, 0.045);
+  --bg-elevated: #fbfbf7;
+  --bg-sunken: #efefe8;
+  --bg-hover: #dfe1d7;
+  --text: #1c2420;
+  --text-muted: #56615a;
+  --border: #cfd2c6;
+  --rule: rgba(28, 36, 32, 0.12);
+
+  --accent: var(--cloth-green);
+  --accent-soft: rgba(36, 65, 47, 0.1);
+  --accent-soft-strong: rgba(36, 65, 47, 0.22);
+  --on-accent: #f3efe2;
+  --primary: var(--cloth-oxblood);
+  --on-primary: #f8f1e6;
+
+  --shelf-top: #cdcfc4;
+  --shelf-front: #b6b9ac;
+  --shelf-shadow: rgba(28, 36, 32, 0.22);
+
+  --danger: #9c3a2e;
+  --danger-soft: rgba(156, 58, 46, 0.1);
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+  --shadow: 0 1px 2px rgba(28, 36, 32, 0.08), 0 8px 24px -8px rgba(28, 36, 32, 0.18);
+  --shadow-lift: 0 2px 4px rgba(28, 36, 32, 0.1), 0 18px 36px -12px rgba(28, 36, 32, 0.32);
+  --deboss: inset 0 1px 2px rgba(28, 36, 32, 0.12), inset 0 -1px 0 rgba(255, 255, 255, 0.6);
+
+  --font-ui: 'Schibsted Grotesk Variable', 'Schibsted Grotesk', system-ui, sans-serif;
+  --font-stamp: 'Gloock', Georgia, serif;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 }
 
 [data-theme='dark'] {
   color-scheme: dark;
-  --accent-l: 68%;
-  --on-accent: #17160f;
-  --bg: #1b1a17;
-  --bg-elevated: #242320;
-  --bg-hover: #2d2b27;
-  --text: #ece7dc;
-  --text-muted: #a29a8b;
-  --border: #38352f;
-  --danger: #d97a6e;
-  --danger-soft: rgba(217, 122, 110, 0.14);
-  --shadow: 0 2px 16px rgba(0, 0, 0, 0.45);
+
+  --cloth-green: #1d3627;
+  --cloth-green-deep: #142519;
+  --cloth-oxblood: #93392f;
+  --cloth-ink: #2b4470;
+  --cloth-ochre: #a7772b;
+  --cloth-plum: #6a3d63;
+  --cloth-slate: #4b5a60;
+
+  --foil: #dcbd74;
+  --foil-bright: #f0d89c;
+  --foil-ink: #d9b96d;
+  --on-cloth: #f1ecdd;
+  --on-cloth-muted: #a9b5a6;
+
+  --bg: #141815;
+  --weave: rgba(220, 189, 116, 0.025);
+  --bg-elevated: #1d221e;
+  --bg-sunken: #181c19;
+  --bg-hover: #262c27;
+  --text: #ebe8dd;
+  --text-muted: #a2aa9f;
+  --border: #323a33;
+  --rule: rgba(235, 232, 221, 0.1);
+
+  --accent: #8fb79a;
+  --accent-soft: rgba(143, 183, 154, 0.12);
+  --accent-soft-strong: rgba(143, 183, 154, 0.24);
+  --on-accent: #10160f;
+  --primary: #a8473b;
+  --on-primary: #fbf3e8;
+
+  --shelf-top: #2a312b;
+  --shelf-front: #0d100e;
+  --shelf-shadow: rgba(0, 0, 0, 0.55);
+
+  --danger: #e08a7c;
+  --danger-soft: rgba(224, 138, 124, 0.12);
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 28px -10px rgba(0, 0, 0, 0.6);
+  --shadow-lift: 0 2px 4px rgba(0, 0, 0, 0.45), 0 22px 40px -12px rgba(0, 0, 0, 0.75);
+  --deboss: inset 0 1px 2px rgba(0, 0, 0, 0.45), inset 0 -1px 0 rgba(255, 255, 255, 0.03);
 }

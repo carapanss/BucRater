@@ -25,3 +25,6 @@ __pycache__/
 *.njsproj
 *.sln
 *.sw?
+
+# Capturas de revisión de diseño (Impeccable)
+.impeccable/review/

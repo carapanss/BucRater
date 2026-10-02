@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react';
 import { ask } from '@tauri-apps/plugin-dialog';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useTagsStore } from '../store/useTagsStore';
+import { Icon } from '../components/Icon';
+import { easeOutExpo } from '../lib/motion';
 
-const DEFAULT_COLORS = ['#8a7355', '#6b7a5e', '#5f7a8a', '#a1453b', '#8a5f8a', '#a68a3f'];
+// Telas de encuadernar: los colores que se asignan a los tags nuevos, por turnos.
+const DEFAULT_COLORS = ['#24412f', '#7b2d26', '#22365a', '#9a6c22', '#4f2e4a', '#3e4a4f', '#5d6b2f', '#8a4a2a'];
 
 export function TagsManagerView() {
   const tags = useTagsStore((s) => s.tags);
@@ -54,73 +58,105 @@ export function TagsManagerView() {
 
   return (
     <div>
-      <div className="list-toolbar">
-        <input
-          className="input"
-          placeholder="Nombre del nuevo tag"
-          value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-        />
-        <button type="button" className="btn btn-primary" onClick={handleCreate}>
-          Crear tag
-        </button>
+      <div className="tags-manager-head">
+        <h1 className="list-head-title">
+          Tags
+          <span className="list-head-count">
+            {tags.length} {tags.length === 1 ? 'tag' : 'tags'}
+          </span>
+        </h1>
+        <form
+          className="tags-create"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void handleCreate();
+          }}
+        >
+          <input
+            className="input"
+            aria-label="Nombre del nuevo tag"
+            placeholder="Nombre del nuevo tag"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+          />
+          <button type="submit" className="btn btn-primary" disabled={!newName.trim()}>
+            <Icon name="plus" size={16} />
+            Crear tag
+          </button>
+        </form>
       </div>
 
       {tags.length === 0 ? (
-        <p className="empty-state">Todavía no has creado ningún tag.</p>
+        <p className="empty-state">
+          Todavía no has creado ningún tag. Cada tag tiene su color de tela, y los libros que lo lleven se encuadernan
+          con él.
+        </p>
       ) : (
         <div className="tags-manager-list">
-          {tags.map((tag) => (
-            <div key={tag.id} className="tags-manager-row">
-              <input
-                type="color"
-                className="color-swatch"
-                value={tag.color ?? '#8a7355'}
-                onChange={(e) => {
-                  rename(tag.id, tag.name, e.target.value).catch(() => {});
-                }}
-              />
-              <input
-                className="input"
-                value={tag.name}
-                onChange={(e) => {
-                  rename(tag.id, e.target.value, tag.color).catch(() => {});
-                }}
-              />
-              {tags.length > 1 && (
-                <select
-                  className="input tags-manager-merge"
-                  value=""
-                  aria-label={`Fusionar el tag ${tag.name} con otro`}
-                  onChange={(e) => {
-                    const targetId = Number(e.target.value);
-                    e.target.value = '';
-                    if (!targetId) return;
-                    const target = tags.find((t) => t.id === targetId);
-                    if (!target) return;
-                    void handleMerge(tag.id, tag.name, target.id, target.name);
-                  }}
-                >
-                  <option value="">Fusionar con…</option>
-                  {tags
-                    .filter((t) => t.id !== tag.id)
-                    .map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name}
-                      </option>
-                    ))}
-                </select>
-              )}
-              <button
-                type="button"
-                className="btn btn-danger btn-sm"
-                onClick={() => void handleDelete(tag.id, tag.name)}
+          <AnimatePresence initial={false}>
+            {tags.map((tag) => (
+              <motion.div
+                key={tag.id}
+                className="tags-manager-row"
+                layout="position"
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, x: 24, transition: { duration: 0.18 } }}
+                transition={{ duration: 0.4, ease: easeOutExpo }}
               >
-                Eliminar
-              </button>
-            </div>
-          ))}
+                <label className="color-swatch" style={{ background: tag.color ?? '#24412f' }} title="Cambiar color">
+                  <input
+                    type="color"
+                    aria-label={`Color del tag ${tag.name}`}
+                    value={tag.color ?? '#24412f'}
+                    onChange={(e) => {
+                      rename(tag.id, tag.name, e.target.value).catch(() => {});
+                    }}
+                  />
+                </label>
+                <input
+                  className="input"
+                  aria-label={`Nombre del tag ${tag.name}`}
+                  value={tag.name}
+                  onChange={(e) => {
+                    rename(tag.id, e.target.value, tag.color).catch(() => {});
+                  }}
+                />
+                {tags.length > 1 && (
+                  <select
+                    className="input tags-manager-merge"
+                    value=""
+                    aria-label={`Fusionar el tag ${tag.name} con otro`}
+                    onChange={(e) => {
+                      const targetId = Number(e.target.value);
+                      e.target.value = '';
+                      if (!targetId) return;
+                      const target = tags.find((t) => t.id === targetId);
+                      if (!target) return;
+                      void handleMerge(tag.id, tag.name, target.id, target.name);
+                    }}
+                  >
+                    <option value="">Fusionar con…</option>
+                    {tags
+                      .filter((t) => t.id !== tag.id)
+                      .map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name}
+                        </option>
+                      ))}
+                  </select>
+                )}
+                <button
+                  type="button"
+                  className="btn btn-danger btn-sm"
+                  onClick={() => void handleDelete(tag.id, tag.name)}
+                >
+                  <Icon name="trash" size={15} />
+                  Eliminar
+                </button>
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       )}
     </div>

@@ -37,6 +37,7 @@ export function CoverImage({ book }: { book: CoverBook }) {
   const [sourceIndex, setSourceIndex] = useState(0);
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupTrigger, setLookupTrigger] = useState(0);
+  const [loaded, setLoaded] = useState<string | null>(null);
 
   useEffect(() => {
     const element = rootRef.current;
@@ -118,17 +119,21 @@ export function CoverImage({ book }: { book: CoverBook }) {
   if (!source) {
     return (
       <div ref={rootRef} className="cover-image-root">
-        <span>{lookupLoading ? 'Buscando portada…' : 'Sin portada'}</span>
+        <ClothCover title={book.title} author={book.author} searching={lookupLoading} />
       </div>
     );
   }
 
   return (
     <div ref={rootRef} className="cover-image-root">
+      <ClothCover title={book.title} author={book.author} />
       <img
+        key={source}
         src={source}
         alt={book.title}
+        className={loaded === source ? 'is-loaded' : undefined}
         onLoad={() => {
+          setLoaded(source);
           if (isRemoteUrl(source)) {
             void cacheRemoteCover(book, source, setCover).catch(() => {
               // Si la caché falla, la imagen remota sigue visible como respaldo.
@@ -143,6 +148,18 @@ export function CoverImage({ book }: { book: CoverBook }) {
           }
         }}
       />
+    </div>
+  );
+}
+
+/** Tapa de tela con el título estampado: la portada cuando no hay imagen (o mientras carga). */
+function ClothCover({ title, author, searching }: { title: string; author: string; searching?: boolean }) {
+  return (
+    <div className="cloth-cover" aria-hidden="true">
+      <span className="cloth-cover-title">{title}</span>
+      <span className="cloth-cover-rule" />
+      <span className="cloth-cover-author">{author}</span>
+      {searching && <span className="cloth-cover-state">Buscando portada…</span>}
     </div>
   );
 }

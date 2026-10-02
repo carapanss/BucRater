@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import { useThemeStore } from './store/useThemeStore';
 import { useTagsStore } from './store/useTagsStore';
 import { useBooksStore } from './store/useBooksStore';
@@ -13,6 +13,8 @@ import { MetricsView } from './views/MetricsView';
 import { TagsManagerView } from './views/TagsManagerView';
 import { importBackup } from './api/backup';
 import { syncLibrary } from './api/sync';
+import { Icon } from './components/Icon';
+import { easeOutExpo, springFirm } from './lib/motion';
 
 type View = 'list' | 'metrics' | 'tags';
 
@@ -74,51 +76,90 @@ export default function App() {
   }
 
   return (
-    <div className="app-shell">
-      <header className="app-header">
-        <span className="app-title">BucRater</span>
-        <nav className="nav-tabs">
-          {TABS.map((tab) => (
+    <MotionConfig reducedMotion="user">
+      <div className="app-shell">
+        <header className="app-header">
+          <span className="app-title">BucRater</span>
+          <nav className="nav-tabs" aria-label="Secciones">
+            {TABS.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                className={`nav-tab${view === tab.id ? ' active' : ''}`}
+                aria-current={view === tab.id ? 'page' : undefined}
+                onClick={() => setView(tab.id)}
+              >
+                {tab.label}
+                {view === tab.id && (
+                  <motion.div className="nav-tab-underline" layoutId="nav-underline" transition={springFirm} />
+                )}
+              </button>
+            ))}
+          </nav>
+          <div className="header-actions">
             <button
-              key={tab.id}
               type="button"
-              className={`nav-tab${view === tab.id ? ' active' : ''}`}
-              onClick={() => setView(tab.id)}
+              className="cloth-button"
+              onClick={() => void handleImport()}
+              title="Importar un backup"
+              aria-label="Importar un backup"
             >
-              {tab.label}
-              {view === tab.id && <motion.div className="nav-tab-underline" layoutId="nav-underline" />}
+              <Icon name="import" size={16} />
+              <span className="label">Importar</span>
             </button>
-          ))}
-        </nav>
-        <div className="header-actions">
-          <button type="button" className="btn btn-sm" onClick={() => void handleImport()}>
-            Importar
-          </button>
-          <ExportMenu />
-          <UpdateButton />
-          <ThemeToggle />
-        </div>
-      </header>
-      <main className="app-body">
-        {!syncReady ? (
-          <p className="empty-state">Conectando con tu biblioteca…</p>
-        ) : (
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={view}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-            >
-              {view === 'list' && <BookListView />}
-              {view === 'metrics' && <MetricsView />}
-              {view === 'tags' && <TagsManagerView />}
-            </motion.div>
-          </AnimatePresence>
-        )}
-      </main>
-      <ToastStack />
+            <ExportMenu />
+            <UpdateButton />
+            <ThemeToggle />
+          </div>
+        </header>
+        <motion.main className="app-body" layoutScroll>
+          {!syncReady ? (
+            <BootState />
+          ) : (
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={view}
+                className="app-view"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0, transition: { duration: 0.42, ease: easeOutExpo } }}
+                exit={{ opacity: 0, y: -4, transition: { duration: 0.12, ease: 'easeIn' } }}
+              >
+                {view === 'list' && <BookListView />}
+                {view === 'metrics' && <MetricsView />}
+                {view === 'tags' && <TagsManagerView />}
+              </motion.div>
+            </AnimatePresence>
+          )}
+        </motion.main>
+        <ToastStack />
+      </div>
+    </MotionConfig>
+  );
+}
+
+const BOOT_SPINES = [
+  { color: 'var(--cloth-green)', height: 40 },
+  { color: 'var(--cloth-oxblood)', height: 32 },
+  { color: 'var(--cloth-ochre)', height: 44 },
+  { color: 'var(--cloth-ink)', height: 36 },
+];
+
+// Mientras se abre la biblioteca, cuatro lomos se colocan en el estante uno tras otro.
+function BootState() {
+  return (
+    <div className="boot-state" role="status">
+      <div className="boot-spines" aria-hidden="true">
+        {BOOT_SPINES.map((spine, i) => (
+          <motion.span
+            key={i}
+            style={{ background: spine.color, height: spine.height }}
+            initial={{ scaleY: 0.2, opacity: 0 }}
+            animate={{ scaleY: [0.2, 1, 1, 0.2], opacity: [0, 1, 1, 0] }}
+            transition={{ duration: 1.8, times: [0, 0.3, 0.75, 1], repeat: Infinity, delay: i * 0.12, ease: easeOutExpo }}
+          />
+        ))}
+      </div>
+      <span>Abriendo tu biblioteca…</span>
     </div>
   );
 }

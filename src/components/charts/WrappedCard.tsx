@@ -1,5 +1,8 @@
 import { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
+import { DigitRoll } from '../DigitRoll';
+import { Icon, StarGlyph } from '../Icon';
+import { easeOutExpo } from '../../lib/motion';
 import { toPng } from 'html-to-image';
 import { save } from '@tauri-apps/plugin-dialog';
 import { writeFile } from '@tauri-apps/plugin-fs';
@@ -13,19 +16,23 @@ function pluralize(n: number, singular: string, plural: string): string {
 interface Stat {
   label: string;
   value: string;
+  /** Las cifras puras se muestran con el contador mecánico. */
+  count?: number;
+  stars?: number;
 }
 
 function buildStats(wrapped: WrappedSummary): Stat[] {
   const stats: Stat[] = [
-    { label: 'Libros leídos', value: String(wrapped.totalBooks) },
-    { label: 'Páginas leídas', value: String(wrapped.totalPages) },
+    { label: 'Libros leídos', value: String(wrapped.totalBooks), count: wrapped.totalBooks },
+    { label: 'Páginas leídas', value: String(wrapped.totalPages), count: wrapped.totalPages },
   ];
   if (wrapped.topAuthor) stats.push({ label: 'Autor favorito', value: wrapped.topAuthor });
   if (wrapped.topTag) stats.push({ label: 'Tag favorito', value: wrapped.topTag });
   if (wrapped.bestRatedBookTitle) {
     stats.push({
       label: 'Mejor valorado',
-      value: `${wrapped.bestRatedBookTitle} (${'★'.repeat(wrapped.bestRatedBookRating ?? 0)})`,
+      value: wrapped.bestRatedBookTitle,
+      stars: wrapped.bestRatedBookRating ?? 0,
     });
   }
   if (wrapped.longestStreakMonths > 0) {
@@ -66,24 +73,56 @@ export function WrappedCard({ wrapped }: { wrapped: WrappedSummary }) {
   }
 
   return (
-    <div className="wrapped-card">
-      <div className="wrapped-heading">Tu {wrapped.year} en libros</div>
-      <div className="wrapped-stats">
-        {stats.map((stat, i) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 6 }}
+    <section className="wrapped-card" aria-label={`Resumen de ${wrapped.year}`}>
+      <div className="wrapped-frame" aria-hidden="true" />
+      <motion.h2
+        className="wrapped-heading"
+        initial={{ opacity: 0, y: 12, filter: 'blur(6px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: 0.7, ease: easeOutExpo }}
+      >
+        Tu {wrapped.year} en libros
+      </motion.h2>
+      {canExport ? (
+        <>
+          <motion.p
+            className="wrapped-colophon"
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, delay: i * 0.06 }}
+            transition={{ duration: 0.6, ease: easeOutExpo, delay: 0.1 }}
           >
-            <div className="wrapped-stat-value">{stat.value}</div>
-            <div className="wrapped-stat-label">{stat.label}</div>
-          </motion.div>
-        ))}
-      </div>
+            En {wrapped.year} leíste <DigitRoll value={wrapped.totalBooks} />{' '}
+            {wrapped.totalBooks === 1 ? 'libro' : 'libros'} y <DigitRoll value={wrapped.totalPages} /> páginas.
+          </motion.p>
+          <dl className="wrapped-ledger">
+            {stats
+              .filter((stat) => stat.count === undefined)
+              .map((stat, i) => (
+                <motion.div
+                  key={stat.label}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, ease: easeOutExpo, delay: 0.25 + i * 0.06 }}
+                >
+                  <dt>{stat.label}</dt>
+                  <dd>
+                    {stat.value}
+                    {stat.stars ? <Stars count={stat.stars} size={13} /> : null}
+                  </dd>
+                </motion.div>
+              ))}
+          </dl>
+        </>
+      ) : (
+        <p className="wrapped-empty">
+          Aún no hay libros leídos con fecha en {wrapped.year}. Cuando marques alguno como leído aparecerá aquí tu
+          resumen del año.
+        </p>
+      )}
       <div className="wrapped-actions">
-        <button type="button" className="btn" disabled={exporting || !canExport} onClick={handleExport}>
-          {exporting ? 'Exportando...' : 'Exportar como imagen'}
+        <button type="button" className="cloth-button is-foil" disabled={exporting || !canExport} onClick={handleExport}>
+          <Icon name="export" size={16} />
+          {exporting ? 'Exportando…' : 'Exportar como imagen'}
         </button>
       </div>
 
@@ -96,7 +135,10 @@ export function WrappedCard({ wrapped }: { wrapped: WrappedSummary }) {
           <div className="wrapped-export-stats">
             {stats.map((stat) => (
               <div key={stat.label} className="wrapped-export-stat">
-                <div className="wrapped-export-stat-value">{stat.value}</div>
+                <div className="wrapped-export-stat-value">
+                  {stat.value}
+                  {stat.stars ? <Stars count={stat.stars} size={30} /> : null}
+                </div>
                 <div className="wrapped-export-stat-label">{stat.label}</div>
               </div>
             ))}
@@ -104,6 +146,16 @@ export function WrappedCard({ wrapped }: { wrapped: WrappedSummary }) {
           <div className="wrapped-export-footer">Hecho con BucRater</div>
         </div>
       </div>
-    </div>
+    </section>
+  );
+}
+
+function Stars({ count, size }: { count: number; size: number }) {
+  return (
+    <span className="wrapped-stars" role="img" aria-label={`${count} de 5`}>
+      {Array.from({ length: count }, (_, i) => (
+        <StarGlyph key={i} filled size={size} />
+      ))}
+    </span>
   );
 }

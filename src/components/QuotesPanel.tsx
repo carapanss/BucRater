@@ -3,6 +3,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import * as quotesApi from '../api/quotes';
 import { errorMessage, useToastStore } from '../store/useToastStore';
 import type { Quote } from '../types';
+import { Icon } from './Icon';
+import { easeOutExpo } from '../lib/motion';
 
 export function QuotesPanel({ bookId, readOnly = false }: { bookId: number | null; readOnly?: boolean }) {
   const [quotes, setQuotes] = useState<Quote[]>([]);
@@ -22,7 +24,7 @@ export function QuotesPanel({ bookId, readOnly = false }: { bookId: number | nul
   }, [bookId, pushToast]);
 
   if (bookId === null) {
-    return <p className="empty-state">Guarda el libro para poder añadir citas.</p>;
+    return <p className="field-hint">Guarda el libro para poder añadir citas.</p>;
   }
 
   async function handleAdd() {
@@ -56,12 +58,13 @@ export function QuotesPanel({ bookId, readOnly = false }: { bookId: number | nul
           <motion.div
             key={quote.id}
             className="quote-item"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
+            layout="position"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, height: 0, transition: { duration: 0.2 } }}
+            transition={{ duration: 0.4, ease: easeOutExpo }}
           >
-            <p>&ldquo;{quote.text}&rdquo;</p>
+            <p>{quote.text}</p>
             {!readOnly && (
               <button
                 type="button"
@@ -69,13 +72,13 @@ export function QuotesPanel({ bookId, readOnly = false }: { bookId: number | nul
                 onClick={() => handleDelete(quote.id)}
                 aria-label="Eliminar cita"
               >
-                ✕
+                <Icon name="trash" size={16} />
               </button>
             )}
           </motion.div>
         ))}
       </AnimatePresence>
-      {quotes.length === 0 && <p className="empty-state">Todavía no has guardado ninguna cita.</p>}
+      {quotes.length === 0 && <p className="field-hint">Todavía no has guardado ninguna cita.</p>}
       {!readOnly && (
         <div className="quote-add-row">
           <textarea
@@ -86,6 +89,7 @@ export function QuotesPanel({ bookId, readOnly = false }: { bookId: number | nul
             onChange={(e) => setDraft(e.target.value)}
           />
           <button type="button" className="btn" disabled={loading || !draft.trim()} onClick={handleAdd}>
+            <Icon name="plus" size={16} />
             Añadir
           </button>
         </div>

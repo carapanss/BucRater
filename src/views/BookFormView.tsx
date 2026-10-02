@@ -10,6 +10,9 @@ import { TagPicker } from '../components/TagPicker';
 import { RereadCounter } from '../components/RereadCounter';
 import { QuotesPanel } from '../components/QuotesPanel';
 import type { Book, BookStatus, GoogleBooksSuggestion } from '../types';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Icon } from '../components/Icon';
+import { easeOutExpo } from '../lib/motion';
 
 interface BookFormViewProps {
   book: Book | null;
@@ -232,7 +235,12 @@ export function BookFormView({ book, onDone, onDirtyChange }: BookFormViewProps)
             placeholder="Título del libro"
           />
           {showSuggestions && suggestions.length > 0 && (
-            <div className="autocomplete-list">
+            <motion.div
+              className="autocomplete-list"
+              initial={{ opacity: 0, y: -6, scaleY: 0.96 }}
+              animate={{ opacity: 1, y: 0, scaleY: 1 }}
+              transition={{ duration: 0.28, ease: easeOutExpo }}
+            >
               {suggestions.map((s) => (
                 <button
                   key={s.googleBooksId}
@@ -241,17 +249,17 @@ export function BookFormView({ book, onDone, onDirtyChange }: BookFormViewProps)
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => applySuggestion(s)}
                 >
-                  {s.coverUrl ? <img src={s.coverUrl} alt="" /> : null}
+                  {s.coverUrl ? <img src={s.coverUrl} alt="" /> : <span className="autocomplete-item-blank" />}
                   <div className="autocomplete-item-text">
                     <div className="autocomplete-item-title">{s.title}</div>
                     <div className="autocomplete-item-author">{s.author}</div>
                   </div>
                 </button>
               ))}
-            </div>
+            </motion.div>
           )}
         </div>
-        {searchLoading && <p className="field-hint">Buscando en Google Books...</p>}
+        {searchLoading && <p className="field-hint">Buscando en Google Books…</p>}
         {searchError && (
           <p className="field-hint field-hint-danger">
             No se pudieron buscar sugerencias ({searchError}). Puedes rellenar los datos a mano.
@@ -275,7 +283,12 @@ export function BookFormView({ book, onDone, onDirtyChange }: BookFormViewProps)
             placeholder="Autor"
           />
           {showAuthorSuggestions && authorSuggestions.length > 0 && (
-            <div className="autocomplete-list">
+            <motion.div
+              className="autocomplete-list"
+              initial={{ opacity: 0, y: -6, scaleY: 0.96 }}
+              animate={{ opacity: 1, y: 0, scaleY: 1 }}
+              transition={{ duration: 0.28, ease: easeOutExpo }}
+            >
               {authorSuggestions.map((s) => (
                 <button
                   key={s.googleBooksId}
@@ -284,17 +297,17 @@ export function BookFormView({ book, onDone, onDirtyChange }: BookFormViewProps)
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => applySuggestion(s)}
                 >
-                  {s.coverUrl ? <img src={s.coverUrl} alt="" /> : null}
+                  {s.coverUrl ? <img src={s.coverUrl} alt="" /> : <span className="autocomplete-item-blank" />}
                   <div className="autocomplete-item-text">
                     <div className="autocomplete-item-title">{s.title}</div>
                     <div className="autocomplete-item-author">{s.author}</div>
                   </div>
                 </button>
               ))}
-            </div>
+            </motion.div>
           )}
         </div>
-        {authorSearchLoading && <p className="field-hint">Buscando títulos de este autor...</p>}
+        {authorSearchLoading && <p className="field-hint">Buscando títulos de este autor…</p>}
       </div>
 
       <div className="field-row">
@@ -406,6 +419,7 @@ export function BookFormView({ book, onDone, onDirtyChange }: BookFormViewProps)
           )}
           <div className="cover-picker-actions">
             <button type="button" className="btn btn-sm" disabled={saving} onClick={() => void chooseCover()}>
+              <Icon name="image" size={15} />
               Elegir imagen
             </button>
             {manualCoverPath ? (
@@ -470,18 +484,33 @@ export function BookFormView({ book, onDone, onDirtyChange }: BookFormViewProps)
         <QuotesPanel bookId={book?.id ?? null} />
       </div>
 
-      {formError && <p className="field-error">{formError}</p>}
+      <AnimatePresence>
+        {formError && (
+          <motion.p
+            className="field-error"
+            role="alert"
+            initial={{ opacity: 0, x: -6 }}
+            animate={{ opacity: 1, x: [-6, 5, -3, 0] }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.35 }}
+          >
+            <Icon name="alert" size={16} />
+            {formError}
+          </motion.p>
+        )}
+      </AnimatePresence>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 20 }}>
+      <div className="form-actions">
         {book ? (
           <button type="button" className="btn btn-danger" onClick={() => void handleDelete()}>
+            <Icon name="trash" size={16} />
             Eliminar
           </button>
         ) : (
           <span />
         )}
         <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void handleSubmit()}>
-          {saving ? 'Guardando...' : 'Guardar'}
+          {saving ? 'Guardando…' : 'Guardar libro'}
         </button>
       </div>
     </div>

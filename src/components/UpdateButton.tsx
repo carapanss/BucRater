@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { relaunch } from '@tauri-apps/plugin-process';
 import { checkForUpdate, type Update } from '../api/updater';
 import { errorMessage, useToastStore } from '../store/useToastStore';
+import { Icon } from './Icon';
 
 type DownloadState = 'idle' | 'checking' | 'downloading' | 'installed';
 
@@ -99,7 +100,7 @@ export function UpdateButton() {
     return (
       <button
         type="button"
-        className="btn btn-primary btn-sm"
+        className="cloth-button is-foil"
         onClick={() => void handleRelaunch()}
       >
         Reiniciar BucRater
@@ -111,7 +112,7 @@ export function UpdateButton() {
     return (
       <button
         type="button"
-        className="btn btn-primary btn-sm"
+        className="cloth-button is-foil"
         disabled={state === 'downloading'}
         onClick={() => void handleInstall()}
         title={`Actualizar a BucRater ${update.version}`}
@@ -124,12 +125,14 @@ export function UpdateButton() {
   return (
     <button
       type="button"
-      className="btn btn-sm"
+      className="cloth-button"
       disabled={state === 'checking'}
       onClick={() => void handleCheck()}
       title="Comprobar actualizaciones"
+      aria-label="Comprobar actualizaciones"
     >
-      {state === 'checking' ? 'Comprobando…' : 'Actualizar'}
+      <Icon name="refresh" size={16} className={state === 'checking' ? 'spin' : undefined} />
+      <span className="label">{state === 'checking' ? 'Comprobando…' : 'Actualizar'}</span>
     </button>
   );
 }

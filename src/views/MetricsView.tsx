@@ -28,54 +28,60 @@ export function MetricsView() {
 
   return (
     <div>
-      <div className="metrics-year-picker">
-        <label style={{ fontSize: 12, color: 'var(--text-muted)' }}>Año</label>
-        <select className="input" value={year} onChange={(e) => setYear(Number(e.target.value))}>
-          {YEAR_OPTIONS.map((y) => (
-            <option key={y} value={y}>
-              {y}
-            </option>
-          ))}
-        </select>
+      <div className="metrics-head">
+        <h1 className="list-head-title">Métricas</h1>
+        <div className="metrics-year-picker">
+          <label htmlFor="metrics-year">Año</label>
+          <select id="metrics-year" className="input" value={year} onChange={(e) => setYear(Number(e.target.value))}>
+            {YEAR_OPTIONS.map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {yearMetrics && (
         <>
-          <div style={{ marginBottom: 18 }}>
-            <WrappedCard wrapped={yearMetrics.wrapped} />
-          </div>
+          <WrappedCard wrapped={yearMetrics.wrapped} />
 
-          <div className="metrics-grid" style={{ marginBottom: 28 }}>
-            <div className="card">
+          <div className="metrics-grid">
+            <div className="metrics-panel">
               <MonthlyBarChart data={yearMetrics.monthlyCounts} />
             </div>
-            <div className="stat-tile" style={{ justifyContent: 'center' }}>
-              <span className="stat-value">{yearMetrics.undefinedDateCount}</span>
-              <span className="stat-label">Libros sin fecha asignada</span>
-            </div>
-            <div className="card">
+            <div className="metrics-panel">
               <ReadingVelocityChart data={yearMetrics.readingVelocity} />
             </div>
-            <div className="card">
+            <div className="metrics-panel">
               <YearHistoryChart history={yearMetrics.yearHistory} />
+            </div>
+            <div className="metrics-panel">
+              <h3 className="chart-title">Sin fecha</h3>
+              <p className="undated-note">
+                <strong className="tabular">{yearMetrics.undefinedDateCount}</strong>
+                {yearMetrics.undefinedDateCount === 1
+                  ? 'libro no tiene fecha de lectura asignada y no cuenta en ningún año.'
+                  : 'libros no tienen fecha de lectura asignada y no cuentan en ningún año.'}
+              </p>
             </div>
           </div>
         </>
       )}
 
-      <div className="section-title">Histórico</div>
+      <h2 className="section-title">Histórico</h2>
       {globalMetrics && (
         <div className="metrics-grid">
-          <div className="card">
+          <div className="metrics-panel">
             <AuthorRankingList data={globalMetrics.authorRanking} />
           </div>
-          <div className="card">
+          <div className="metrics-panel">
             <RatingHistogramChart data={globalMetrics.ratingHistogram} />
           </div>
-          <div className="card span-2">
+          <div className="metrics-panel span-2">
             <TagDistributionChart data={globalMetrics.tagDistribution} />
           </div>
-          <div className="card span-2">
+          <div className="metrics-panel span-2">
             <ReadingHeatmap data={globalMetrics.heatmap} />
           </div>
         </div>

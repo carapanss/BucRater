@@ -1,6 +1,7 @@
 import { useTagsStore } from '../store/useTagsStore';
 import { useBooksStore } from '../store/useBooksStore';
 import type { BookSortBy, BookStatus } from '../types';
+import { Icon } from './Icon';
 
 const SORT_OPTIONS: { value: BookSortBy; label: string }[] = [
   { value: 'read_desc', label: 'Lecturas más recientes' },
@@ -17,14 +18,20 @@ export function SearchFilterBar() {
 
   return (
     <div className="list-toolbar">
-      <input
-        className="input"
-        placeholder="Buscar por título, autor, notas o citas..."
-        value={filter.searchText ?? ''}
-        onChange={(e) => setFilter({ ...filter, searchText: e.target.value || null })}
-      />
+      <label className="search-field">
+        <Icon name="search" size={16} />
+        <input
+          className="input"
+          type="search"
+          aria-label="Buscar en la biblioteca"
+          placeholder="Buscar por título, autor, notas o citas…"
+          value={filter.searchText ?? ''}
+          onChange={(e) => setFilter({ ...filter, searchText: e.target.value || null })}
+        />
+      </label>
       <select
         className="input"
+        aria-label="Filtrar por tag"
         value={filter.tagId ?? ''}
         onChange={(e) =>
           setFilter({ ...filter, tagId: e.target.value ? Number(e.target.value) : null })
@@ -39,6 +46,7 @@ export function SearchFilterBar() {
       </select>
       <select
         className="input"
+        aria-label="Filtrar por estado"
         value={filter.status ?? ''}
         onChange={(e) =>
           setFilter({ ...filter, status: (e.target.value || null) as BookStatus | null })
@@ -51,6 +59,7 @@ export function SearchFilterBar() {
       </select>
       <select
         className="input"
+        aria-label="Valoración mínima"
         value={filter.minRating ?? ''}
         onChange={(e) =>
           setFilter({ ...filter, minRating: e.target.value ? Number(e.target.value) : null })
@@ -65,6 +74,7 @@ export function SearchFilterBar() {
       </select>
       <select
         className="input"
+        aria-label="Ordenar"
         value={filter.sortBy ?? 'read_desc'}
         onChange={(e) => setFilter({ ...filter, sortBy: e.target.value as BookSortBy })}
       >
