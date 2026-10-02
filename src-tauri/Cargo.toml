@@ -1,6 +1,6 @@
 [package]
 name = "bucrater"
-version = "0.3.0"
+version = "0.3.1"
 description = "BucRater - registro personal de libros leídos"
 authors = ["manu"]
 edition = "2021"
