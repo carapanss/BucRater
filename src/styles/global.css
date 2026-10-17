@@ -322,59 +322,87 @@ input[type='search']::-webkit-search-cancel-button {
 
 .page-turn {
   position: relative;
-  perspective: 2400px;
-  perspective-origin: 30% 20%;
 }
-.page-leaf,
-.page-ghost {
-  transform-origin: 0% 50%;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  background: var(--paper);
-  border-radius: 0 5px 5px 0;
+.page-box {
+  position: relative;
 }
 .page-leaf {
   position: relative;
+  background: var(--paper);
+  border-radius: 0 5px 5px 0;
 }
-/* hojas en blanco que pasan entre la que se va y la que llega */
-.page-ghost {
+
+/* La hoja que pasa: papel en blanco hecho de tiras articuladas, cada una girada un poco más
+   que la anterior, de modo que el papel se curva en vez de girar como un cartón. */
+.turn-sheets {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: 6;
   pointer-events: none;
-  box-shadow: 1px 0 0 var(--paper-edge), 0 0 0 1px var(--rule-soft) inset;
 }
 /* sobre las baldas la hoja gira sobre el lomo del libro, que queda a la izquierda de la balda */
-.page-turn.is-shelf {
-  perspective-origin: calc(var(--gutter) * -1 + 40%) 20%;
+.page-turn.is-shelf .turn-sheets {
+  left: calc(var(--gutter) * -1);
 }
-.page-turn.is-shelf .page-leaf,
-.page-turn.is-shelf .page-ghost {
-  transform-origin: calc(var(--gutter) * -1) 50%;
-}
-/* sombra del pliegue sobre la hoja que gira */
-.page-leaf-shade {
+.turn-sheet {
+  --strips: 22;
   position: absolute;
   inset: 0;
-  z-index: 3;
-  opacity: 0;
-  pointer-events: none;
-  border-radius: inherit;
-  background:
-    linear-gradient(90deg, var(--leaf-shadow), transparent 22%),
-    linear-gradient(90deg, transparent 55%, var(--leaf-shadow));
+  opacity: var(--o, 0);
+  perspective: 3200px;
+  perspective-origin: 26% 30%;
+  will-change: opacity;
 }
-/* el canto del papel, visible mientras la hoja está levantada */
-.page-leaf-edge {
+.turn-strip {
+  --ang: calc(var(--a, 0deg) + (var(--k) + 1) * var(--c, 0deg));
   position: absolute;
   top: 0;
   bottom: 0;
-  right: -4px;
-  width: 4px;
-  z-index: 3;
-  opacity: 0;
-  pointer-events: none;
-  background: repeating-linear-gradient(90deg, var(--paper-edge) 0 1px, var(--paper-edge-light) 1px 2px);
+  left: 100%;
+  width: 100%;
+  transform-origin: 0% 50%;
+  transform-style: preserve-3d;
+  transform: rotateY(var(--c, 0deg));
+  will-change: transform;
+}
+.turn-strip.is-first {
+  left: 0;
+  width: calc(100% / var(--strips));
+  transform: rotateY(calc(var(--a, 0deg) + var(--c, 0deg)));
+}
+.turn-face {
+  position: absolute;
+  inset: 0 -0.6px 0 0;
+  background: var(--paper);
+  border-block: 1px solid var(--paper-edge);
+  backface-visibility: visible;
+}
+/* el papel se oscurece según se inclina respecto a la luz */
+.turn-face::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--leaf-shadow);
+  opacity: calc(sin(var(--ang)) * sin(var(--ang)) * 0.34);
+}
+.turn-strip.is-last > .turn-face {
+  inset-inline-end: 0;
+  border-inline-end: 1px solid var(--paper-edge);
+  border-radius: 0 5px 5px 0;
+  box-shadow: 2px 0 0 var(--paper-edge-light), 3px 0 0 var(--paper-edge);
+}
+/* sombra que la hoja deja caer sobre la página que va quedando a la vista */
+.turn-cast {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 120px;
+  transform: translateX(var(--edge, 0px));
+  opacity: var(--cast, 0);
+  background: linear-gradient(90deg, var(--leaf-shadow), transparent);
+  mask-image: linear-gradient(90deg, #000, transparent);
+  -webkit-mask-image: linear-gradient(90deg, #000, transparent);
 }
 
 .app-view {
@@ -385,7 +413,7 @@ input[type='search']::-webkit-search-cancel-button {
 /* al llegar la hoja nueva, su contenido se imprime en orden: encabezado, herramientas, libros */
 .app-view > * {
   animation: ink-in 0.7s var(--ease-out) both;
-  animation-delay: calc(0.3s + var(--i, 0) * 70ms);
+  animation-delay: calc(var(--ink-delay, 0.3s) + var(--i, 0) * 70ms);
 }
 .app-view > :nth-child(2) {
   --i: 1;
