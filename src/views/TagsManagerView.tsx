@@ -1,3 +1,4 @@
+import { tagStyle } from '../lib/cloth';
 import { useEffect, useState } from 'react';
 import { ask } from '@tauri-apps/plugin-dialog';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -104,7 +105,7 @@ export function TagsManagerView() {
                 exit={{ opacity: 0, x: 24, transition: { duration: 0.18 } }}
                 transition={{ duration: 0.4, ease: easeOutExpo }}
               >
-                <label className="color-swatch" style={{ background: tag.color ?? '#24412f' }} title="Cambiar color">
+                <label className="color-swatch ink-fill" style={tagStyle(tag)} title="Color de las portadas con este tag">
                   <input
                     type="color"
                     aria-label={`Color del tag ${tag.name}`}

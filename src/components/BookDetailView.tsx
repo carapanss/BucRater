@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import type { Book } from '../types';
 import { CoverImage } from './CoverImage';
@@ -7,7 +7,7 @@ import { StarRating } from './StarRating';
 import { TagBadge } from './TagBadge';
 import { StatusChip } from './StatusChip';
 import { Icon } from './Icon';
-import { clothFor } from '../lib/cloth';
+import { clothStyle } from '../lib/cloth';
 import { easeOutExpo, springFirm } from '../lib/motion';
 
 const MONTHS = [
@@ -63,7 +63,7 @@ export function BookDetailView({ book, onEdit, entrance = 'flight' }: BookDetail
       : null;
 
   return (
-    <div className="book-detail" style={{ '--book-cloth': clothFor(book) } as CSSProperties}>
+    <div className="book-detail" style={clothStyle(book)}>
       <Reveal order={0}>
         <div className="book-detail-endpaper" />
       </Reveal>

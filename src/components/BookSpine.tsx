@@ -1,7 +1,7 @@
 import { memo, type CSSProperties } from 'react';
 import { motion } from 'framer-motion';
 import type { Book } from '../types';
-import { clothFor, spineMetrics } from '../lib/cloth';
+import { clothStyle, spineMetrics } from '../lib/cloth';
 import { STATUS_LABEL } from './StatusChip';
 import { easeOutExpo, springFirm } from '../lib/motion';
 
@@ -28,7 +28,7 @@ export const BookSpine = memo(function BookSpine({ book, index, hidden, onSelect
       <motion.button
         type="button"
         className={`book-spine${width >= 40 ? ' is-wide' : ''}${book.title.length > 22 ? ' is-long' : ''}`}
-        style={{ width, height, '--book-cloth': clothFor(book), visibility: hidden ? 'hidden' : 'visible' } as CSSProperties}
+        style={{ width, height, ...clothStyle(book), visibility: hidden ? 'hidden' : 'visible' } as CSSProperties}
         whileHover={{ y: -12, transition: springFirm }}
         whileTap={{ y: -6 }}
         transition={springFirm}

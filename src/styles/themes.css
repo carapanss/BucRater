@@ -1,58 +1,69 @@
 /*
- * Papel y tinta.
- * La app es un libro abierto sobre una mesa: papel de impresión, tinta azul negra, una segunda
- * tinta (azul) para lo que se marca, tela de encuadernar para las tapas y las cintas.
+ * Tinta sobre papel.
+ * Un libro impreso: negro y blanco, trazo simple. Lo que antes era color se distingue por tramas
+ * (rayas, puntos, cuadrículas). Las telas de colores solo aparecen si se pide el color de las
+ * portadas (data-ink="color").
  */
 :root {
   color-scheme: light;
 
-  /* telas de encuadernar: tapas, lomos y cintas marcapáginas */
+  /* telas de encuadernar: solo en el modo con color */
   --cloth-green: #24412f;
   --cloth-oxblood: #7b2d26;
   --cloth-ink: #22365a;
   --cloth-ochre: #9a6c22;
   --cloth-plum: #4f2e4a;
   --cloth-slate: #3e4a4f;
-
-  /* pan de oro: solo sobre tela */
   --foil: #d8b66a;
   --foil-bright: #ecd394;
   --on-cloth: #f3efe2;
-  --on-cloth-muted: #c3cbbd;
 
-  /* la mesa, el papel y las tintas */
-  --desk: #bdb6a3;
-  --desk-shade: #a9a18d;
-  --paper: #f4f0e4;
-  --paper-sunken: #ebe6d6;
-  --paper-hover: #e3ddca;
-  --paper-edge: #cfc8b2;
-  --paper-edge-light: #ebe6d5;
-  --ink: #1c2231;
-  --ink-muted: #5a5d68;
-  --ink-blue: #2a418a;
-  --on-ink: #f4f0e4;
-  --rule: rgba(28, 34, 49, 0.26);
-  --rule-soft: rgba(28, 34, 49, 0.13);
-  --rubric: #8f2f2a;
-  --rubric-soft: rgba(143, 47, 42, 0.1);
-  --blue-soft: rgba(42, 65, 138, 0.1);
-  --sepia: #6e5236;
+  /* la mesa, el papel y la tinta */
+  --desk: #cdcdc8;
+  --desk-dot: rgba(18, 18, 18, 0.2);
+  --paper: #f7f6f1;
+  --paper-sunken: #ecebe5;
+  --paper-hover: #e1e0d9;
+  --paper-edge: #b9b8b0;
+  --paper-edge-light: #ecebe5;
+  --ink: #121212;
+  --ink-muted: #555555;
+  --on-ink: #f7f6f1;
+  --rule: rgba(18, 18, 18, 0.3);
+  --rule-soft: rgba(18, 18, 18, 0.14);
+  --ink-wash: rgba(18, 18, 18, 0.07);
+
+  /* nombres heredados de la versión anterior: ahora todo es la misma tinta */
+  --ink-blue: var(--ink);
+  --sepia: var(--ink-muted);
+  --rubric: var(--ink);
+  --rubric-soft: var(--ink-wash);
+  --blue-soft: var(--ink-wash);
 
   --tex-cloth: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAYAAABWKLW/AAAAB3RJTUUH6goCDxcQiNqRoQAAACJJREFUCNdNwUERACAMA7CUQwX+HU5A9yUJXtuBC0kGjs8ClboFCHM9Tz8AAAAASUVORK5CYII=');
 
-  --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%235a5d68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  /* tramas: cada encuadernación, cinta o serie se distingue por su dibujo, no por su color */
+  --pat-0: repeating-linear-gradient(0deg, var(--ink) 0 1.2px, transparent 1.2px 5px), var(--paper);
+  --pat-1: repeating-linear-gradient(45deg, var(--ink) 0 1.2px, transparent 1.2px 5px), var(--paper);
+  --pat-2: radial-gradient(circle, var(--ink) 1.3px, transparent 1.7px) 0 0 / 7px 7px, var(--paper);
+  --pat-3:
+    repeating-linear-gradient(45deg, var(--ink) 0 1px, transparent 1px 6px),
+    repeating-linear-gradient(-45deg, var(--ink) 0 1px, transparent 1px 6px), var(--paper);
+  --pat-4: repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 5px), var(--paper);
+  --pat-5: conic-gradient(var(--ink) 25%, var(--paper) 0 50%, var(--ink) 0 75%, var(--paper) 0) 0 0 / 8px 8px;
+
+  --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23555555' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 
   --font-text: 'Literata Variable', 'Literata', Georgia, serif;
   --font-display: 'IM Fell English', Georgia, 'Times New Roman', serif;
 
-  --leaf-shadow: rgba(24, 18, 6, 0.55);
-  --shadow-sheet: 0 1px 2px rgba(24, 18, 6, 0.14), 0 26px 50px -22px rgba(24, 18, 6, 0.55);
-  --shadow-pop: 0 1px 2px rgba(24, 18, 6, 0.16), 0 14px 30px -12px rgba(24, 18, 6, 0.45);
+  --leaf-shadow: rgba(10, 10, 10, 0.55);
+  --shadow-sheet: 0 1px 2px rgba(10, 10, 10, 0.16), 0 26px 50px -22px rgba(10, 10, 10, 0.55);
+  --shadow-pop: 0 1px 2px rgba(10, 10, 10, 0.18), 0 14px 30px -12px rgba(10, 10, 10, 0.45);
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
-  --heat: var(--ink-blue);
+  --heat: var(--ink);
 }
 
 [data-theme='dark'] {
@@ -65,33 +76,24 @@
   --cloth-plum: #6a3d63;
   --cloth-slate: #4b5a60;
 
-  --foil: #dcbd74;
-  --foil-bright: #f0d89c;
-  --on-cloth: #f1ecdd;
-  --on-cloth-muted: #b4bdae;
+  /* edición nocturna: papel negro y tinta blanca */
+  --desk: #090909;
+  --desk-dot: rgba(236, 235, 228, 0.13);
+  --paper: #161616;
+  --paper-sunken: #101010;
+  --paper-hover: #232323;
+  --paper-edge: #3a3a38;
+  --paper-edge-light: #0f0f0f;
+  --ink: #ecebe4;
+  --ink-muted: #a8a7a0;
+  --on-ink: #161616;
+  --rule: rgba(236, 235, 228, 0.3);
+  --rule-soft: rgba(236, 235, 228, 0.14);
+  --ink-wash: rgba(236, 235, 228, 0.08);
 
-  /* edición nocturna: papel oscuro y tinta crema, como un libro leído a la luz de una lámpara */
-  --desk: #0d0c0b;
-  --desk-shade: #060606;
-  --paper: #211f1b;
-  --paper-sunken: #1a1815;
-  --paper-hover: #2b2823;
-  --paper-edge: #3a362e;
-  --paper-edge-light: #14120f;
-  --ink: #ebe4d1;
-  --ink-muted: #a9a290;
-  --ink-blue: #93a9ea;
-  --on-ink: #1a1815;
-  --rule: rgba(235, 228, 209, 0.26);
-  --rule-soft: rgba(235, 228, 209, 0.12);
-  --rubric: #e38d80;
-  --rubric-soft: rgba(227, 141, 128, 0.12);
-  --blue-soft: rgba(147, 169, 234, 0.12);
-  --sepia: #c2a47c;
+  --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23a8a7a0' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 
-  --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23a9a290' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-
-  --leaf-shadow: rgba(0, 0, 0, 0.7);
-  --shadow-sheet: 0 1px 2px rgba(0, 0, 0, 0.5), 0 26px 50px -22px rgba(0, 0, 0, 0.85);
-  --shadow-pop: 0 1px 2px rgba(0, 0, 0, 0.5), 0 14px 30px -12px rgba(0, 0, 0, 0.8);
+  --leaf-shadow: rgba(0, 0, 0, 0.75);
+  --shadow-sheet: 0 1px 2px rgba(0, 0, 0, 0.5), 0 26px 50px -22px rgba(0, 0, 0, 0.9);
+  --shadow-pop: 0 1px 2px rgba(0, 0, 0, 0.5), 0 14px 30px -12px rgba(0, 0, 0, 0.85);
 }

@@ -1,8 +1,8 @@
-import { memo, type CSSProperties } from 'react';
+import { memo } from 'react';
 import { motion } from 'framer-motion';
 import type { ShelfItem } from '../types';
 import { CoverImage } from './CoverImage';
-import { clothFor } from '../lib/cloth';
+import { clothStyle } from '../lib/cloth';
 import { easeOutExpo, springFirm } from '../lib/motion';
 
 interface ShelfItemCardProps {
@@ -26,7 +26,7 @@ export const ShelfItemCard = memo(function ShelfItemCard({
       className="book-card shelf-item"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0, transition: { duration: 0.5, ease: easeOutExpo, delay: Math.min(index, 12) * 0.03 } }}
-      style={{ '--book-cloth': clothFor({ ...item, tags: [] }) } as CSSProperties}
+      style={clothStyle({ ...item, tags: [] })}
     >
       <button
         type="button"

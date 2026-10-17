@@ -9,7 +9,7 @@ import { SHELF_NAME, ShelfItemForm } from '../components/ShelfItemForm';
 import { Modal } from '../components/Modal';
 import { Icon } from '../components/Icon';
 import { BookFormView, type BookPrefill } from './BookFormView';
-import { clothFor } from '../lib/cloth';
+import { clothStyle, NEW_BOOK_STYLE } from '../lib/cloth';
 import type { ShelfItem, ShelfKind } from '../types';
 
 const COPY: Record<ShelfKind, { intro: string; empty: string; emptyHint: string }> = {
@@ -174,7 +174,7 @@ export function ShelfView({ kind }: { kind: ShelfKind }) {
           <Modal
             key="shelf-form"
             title={editing === 'new' ? 'Apuntar libro' : 'Editar libro'}
-            cloth={editing === 'new' ? 'var(--cloth-green)' : clothFor({ ...editing, tags: [] })}
+            cloth={editing === 'new' ? NEW_BOOK_STYLE : clothStyle({ ...editing, tags: [] })}
             onClose={() => void closeEditor()}
           >
             <ShelfItemForm
@@ -192,7 +192,7 @@ export function ShelfView({ kind }: { kind: ShelfKind }) {
           <Modal
             key="to-library"
             title="Pasar a la biblioteca"
-            cloth={clothFor({ ...transfer.item, tags: [] })}
+            cloth={clothStyle({ ...transfer.item, tags: [] })}
             onClose={() => setTransfer(null)}
           >
             <BookFormView

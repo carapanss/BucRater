@@ -1,10 +1,10 @@
-import { memo, type CSSProperties } from 'react';
+import { memo } from 'react';
 import { motion } from 'framer-motion';
 import type { Book } from '../types';
 import { CoverImage } from './CoverImage';
 import { StarGlyph } from './Icon';
 import { StatusChip } from './StatusChip';
-import { clothFor } from '../lib/cloth';
+import { clothStyle } from '../lib/cloth';
 import { easeOutExpo, springFirm } from '../lib/motion';
 
 interface BookCardProps {
@@ -24,7 +24,7 @@ export const BookCard = memo(function BookCard({ book, index, hidden, onSelect }
       exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.15 } }}
       transition={springFirm}
       className="book-card"
-      style={{ '--book-cloth': clothFor(book) } as CSSProperties}
+      style={clothStyle(book)}
       onClick={() => onSelect(book.uuid)}
       aria-label={`${book.title}, de ${book.author}`}
     >

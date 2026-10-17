@@ -6,6 +6,8 @@ import { useBooksStore } from './store/useBooksStore';
 import { useShelfStore } from './store/useShelfStore';
 import { errorMessage, useToastStore } from './store/useToastStore';
 import { ThemeToggle } from './components/ThemeToggle';
+import { InkToggle } from './components/InkToggle';
+import { useInkStore } from './store/useInkStore';
 import { UpdateButton } from './components/UpdateButton';
 import { ToastStack } from './components/ToastStack';
 import { ExportMenu } from './components/ExportMenu';
@@ -21,13 +23,13 @@ import { easeOutExpo } from './lib/motion';
 
 type View = 'list' | 'wishlist' | 'owned' | 'metrics' | 'tags';
 
-// Cada sección es una cinta marcapáginas del color de una tela de encuadernar.
+// Cada sección es una cinta marcapáginas con su propia trama.
 const TABS: { id: View; label: string; ribbon: string }[] = [
-  { id: 'list', label: 'Libros', ribbon: 'var(--cloth-oxblood)' },
-  { id: 'wishlist', label: 'Quiero leer', ribbon: 'var(--cloth-ink)' },
-  { id: 'owned', label: 'Comprados', ribbon: 'var(--cloth-ochre)' },
-  { id: 'metrics', label: 'Métricas', ribbon: 'var(--cloth-green)' },
-  { id: 'tags', label: 'Tags', ribbon: 'var(--cloth-plum)' },
+  { id: 'list', label: 'Libros', ribbon: 'var(--pat-0)' },
+  { id: 'wishlist', label: 'Quiero leer', ribbon: 'var(--pat-1)' },
+  { id: 'owned', label: 'Comprados', ribbon: 'var(--pat-2)' },
+  { id: 'metrics', label: 'Métricas', ribbon: 'var(--pat-3)' },
+  { id: 'tags', label: 'Tags', ribbon: 'var(--pat-4)' },
 ];
 
 const CHAPTER: Record<View, string> = {
@@ -40,6 +42,7 @@ const CHAPTER: Record<View, string> = {
 
 export default function App() {
   const theme = useThemeStore((s) => s.theme);
+  const inkColor = useInkStore((s) => s.color);
   const loadTags = useTagsStore((s) => s.load);
   const loadBooks = useBooksStore((s) => s.load);
   const loadShelf = useShelfStore((s) => s.load);
@@ -51,6 +54,10 @@ export default function App() {
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
+
+  useEffect(() => {
+    document.documentElement.dataset.ink = inkColor ? 'color' : 'mono';
+  }, [inkColor]);
 
   useEffect(() => {
     let cancelled = false;
@@ -121,6 +128,7 @@ export default function App() {
               </button>
               <ExportMenu />
               <UpdateButton />
+              <InkToggle />
               <ThemeToggle />
             </div>
           </header>
@@ -161,10 +169,10 @@ export default function App() {
 }
 
 const BOOT_SPINES = [
-  { color: 'var(--cloth-green)', height: 40 },
-  { color: 'var(--cloth-oxblood)', height: 32 },
-  { color: 'var(--cloth-ochre)', height: 44 },
-  { color: 'var(--cloth-ink)', height: 36 },
+  { color: 'var(--pat-0)', height: 40 },
+  { color: 'var(--pat-2)', height: 32 },
+  { color: 'var(--pat-1)', height: 44 },
+  { color: 'var(--pat-3)', height: 36 },
 ];
 
 // Mientras se abre la biblioteca, cuatro lomos se colocan en el estante uno tras otro.

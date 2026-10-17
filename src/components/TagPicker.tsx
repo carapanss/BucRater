@@ -1,7 +1,7 @@
 import { useTagsStore } from '../store/useTagsStore';
-import type { CSSProperties } from 'react';
 import { motion } from 'framer-motion';
 import type { Tag } from '../types';
+import { tagStyle } from '../lib/cloth';
 
 interface TagPickerProps {
   selectedIds: number[];
@@ -31,11 +31,10 @@ export function TagPicker({ selectedIds, onChange }: TagPickerProps) {
           type="button"
           aria-pressed={selectedIds.includes(tag.id)}
           className={`tag-chip${selectedIds.includes(tag.id) ? ' selected' : ''}`}
-          style={{ '--tag-color': tag.color ?? undefined } as CSSProperties}
           whileTap={{ scale: 0.94 }}
           onClick={() => toggle(tag)}
         >
-          <span className="tag-badge-dot" style={tag.color ? { background: tag.color } : undefined} />
+          <span className="tag-badge-dot ink-fill" style={tagStyle(tag)} />
           {tag.name}
         </motion.button>
       ))}

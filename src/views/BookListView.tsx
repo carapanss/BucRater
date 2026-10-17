@@ -11,7 +11,7 @@ import { Icon } from '../components/Icon';
 import { BookFormView } from './BookFormView';
 import { springFirm } from '../lib/motion';
 import { PagedShelf } from '../components/PagedShelf';
-import { clothFor, spineMetrics } from '../lib/cloth';
+import { clothStyle, NEW_BOOK_STYLE, spineMetrics } from '../lib/cloth';
 import type { Book, BookFilter } from '../types';
 
 type ShelfMode = 'covers' | 'spines';
@@ -159,7 +159,7 @@ export function BookListView() {
         {editing !== null && (
           <Modal
             title={editing === 'new' ? 'Añadir libro' : 'Editar libro'}
-            cloth={editing === 'new' ? 'var(--cloth-green)' : clothFor(editing)}
+            cloth={editing === 'new' ? NEW_BOOK_STYLE : clothStyle(editing)}
             onClose={() => void closeEditor()}
           >
             <BookFormView
@@ -178,10 +178,10 @@ export function BookListView() {
 }
 
 const EMPTY_SPINES = [
-  { color: 'var(--cloth-green)', height: 74 },
-  { color: 'var(--cloth-oxblood)', height: 62 },
-  { color: 'var(--cloth-ochre)', height: 80 },
-  { color: 'var(--cloth-ink)', height: 68 },
+  { color: 'var(--pat-0)', height: 74 },
+  { color: 'var(--pat-2)', height: 62 },
+  { color: 'var(--pat-1)', height: 80 },
+  { color: 'var(--pat-3)', height: 68 },
 ];
 
 function EmptyShelf({ onAdd }: { onAdd: () => void }) {

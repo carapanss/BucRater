@@ -15,7 +15,8 @@ export type IconName =
   | 'trash'
   | 'check'
   | 'alert'
-  | 'image';
+  | 'image'
+  | 'palette';
 
 // Trazos de 24×24 con grosor uniforme: un único sistema de iconos para toda la app.
 const PATHS: Record<IconName, ReactElement> = {
@@ -65,6 +66,12 @@ const PATHS: Record<IconName, ReactElement> = {
     <>
       <path d="M12 3.5l9.5 16.5h-19L12 3.5z" />
       <path d="M12 10v4.5M12 17.2v.3" />
+    </>
+  ),
+  palette: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 3.5v17M12 12h8.5M12 7.5h5M12 16.5h5" />
     </>
   ),
   image: (

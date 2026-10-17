@@ -1,3 +1,4 @@
+import { tagStyle } from '../../lib/cloth';
 import { motion } from 'framer-motion';
 import type { TagCount } from '../../types';
 import { springFirm } from '../../lib/motion';
@@ -23,11 +24,11 @@ export function TagDistributionChart({ data }: { data: TagCount[] }) {
             <span className="hbar-row-label">{d.tag.name}</span>
             <div className="hbar-track">
               <motion.div
-                className="hbar-fill"
+                className="hbar-fill ink-fill"
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: d.count / max }}
                 transition={{ ...springFirm, delay: i * 0.04 }}
-                style={d.tag.color ? { background: d.tag.color } : undefined}
+                style={tagStyle(d.tag)}
               />
             </div>
             <span className="hbar-value">{d.count}</span>

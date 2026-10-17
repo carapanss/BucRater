@@ -1,4 +1,5 @@
-import type { Book } from '../types';
+import type { CSSProperties } from 'react';
+import type { Book, Tag } from '../types';
 
 // Telas de encuadernar por defecto, en el orden en que se reparten entre libros sin tag.
 const CLOTHS = [
@@ -33,3 +34,35 @@ export function spineMetrics(book: Pick<Book, 'title' | 'pageCount'>): { width: 
   const height = 200 + (hash(book.title) % 5) * 10;
   return { width, height };
 }
+
+/** Cuántas tramas distintas hay (--pat-0 … --pat-5 en themes.css). */
+export const PATTERN_COUNT = 6;
+
+/** Trama de un tag: estable, para que los libros del mismo tag compartan encuadernación. */
+export function tagPattern(tag: Pick<Tag, 'id'>): number {
+  return tag.id % PATTERN_COUNT;
+}
+
+/**
+ * Encuadernación del libro: la trama (blanco y negro) y la tela (color), que se elige según
+ * el modo de tinta. Ambas se heredan por todo lo que se dibuja dentro del libro.
+ */
+export function clothStyle(book: Pick<Book, 'title' | 'author' | 'tags'>): CSSProperties {
+  const tag = book.tags.find((t) => t.color);
+  const index = tag ? tagPattern(tag) : hash(`${book.title}\u0000${book.author}`) % PATTERN_COUNT;
+  return { '--book-cloth': clothFor(book), '--book-pattern': `var(--pat-${index})` } as CSSProperties;
+}
+
+/** Trama y color de un tag, para las marcas pequeñas que lo representan. */
+export function tagStyle(tag: Pick<Tag, 'id' | 'color'>): CSSProperties {
+  return {
+    '--book-cloth': tag.color ?? 'var(--cloth-green)',
+    '--book-pattern': `var(--pat-${tagPattern(tag)})`,
+  } as CSSProperties;
+}
+
+/** Encuadernación de un libro que aún no existe (formularios nuevos). */
+export const NEW_BOOK_STYLE: CSSProperties = {
+  '--book-cloth': 'var(--cloth-green)',
+  '--book-pattern': 'var(--pat-0)',
+} as CSSProperties;

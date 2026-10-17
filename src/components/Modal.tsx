@@ -10,8 +10,8 @@ interface ModalProps {
   children: ReactNode;
   /** "book": la ficha de un libro, sin cabecera visible; la portada vuela desde la estantería. */
   variant?: 'sheet' | 'book';
-  /** Tela de la guarda que encabeza la hoja (formularios de un libro). */
-  cloth?: string;
+  /** Encuadernación (trama y tela) de la guarda que encabeza la hoja (formularios de un libro). */
+  cloth?: CSSProperties;
 }
 
 export function Modal({ title, onClose, children, variant = 'sheet', cloth }: ModalProps) {
@@ -66,7 +66,7 @@ export function Modal({ title, onClose, children, variant = 'sheet', cloth }: Mo
           />
         )}
         {cloth && (
-          <div className="book-detail-endpaper modal-endpaper" style={{ '--book-cloth': cloth } as CSSProperties} />
+          <div className="book-detail-endpaper modal-endpaper" style={cloth} />
         )}
         <div className="modal-header">
           {!isBook && <h2 className="modal-title">{title}</h2>}
