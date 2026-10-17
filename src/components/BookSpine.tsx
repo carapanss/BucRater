@@ -23,11 +23,10 @@ export const BookSpine = memo(function BookSpine({ book, index, hidden, onSelect
       transition={springFirm}
       initial={{ opacity: 0, y: -24 }}
       animate={{ opacity: 1, y: 0, transition: { duration: 0.55, ease: easeOutExpo, delay: Math.min(index, 30) * 0.018 } }}
-      exit={{ opacity: 0, transition: { duration: 0.12 } }}
     >
       <motion.button
         type="button"
-        className={`book-spine${width >= 40 ? ' is-wide' : ''}${book.title.length > 22 ? ' is-long' : ''}`}
+        className={`book-spine${book.title.length > 22 ? ' is-long' : ''}`}
         style={{ width, height, ...clothStyle(book), visibility: hidden ? 'hidden' : 'visible' } as CSSProperties}
         whileHover={{ y: -12, transition: springFirm }}
         whileTap={{ y: -6 }}

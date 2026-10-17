@@ -4,6 +4,7 @@ import { AnimatePresence } from 'framer-motion';
 import { useShelfStore } from '../store/useShelfStore';
 import { useBooksStore } from '../store/useBooksStore';
 import { PagedShelf } from '../components/PagedShelf';
+import { EmptyShelf } from '../components/EmptyShelf';
 import { ShelfItemCard } from '../components/ShelfItemCard';
 import { SHELF_NAME, ShelfItemForm } from '../components/ShelfItemForm';
 import { Modal } from '../components/Modal';
@@ -140,14 +141,12 @@ export function ShelfView({ kind }: { kind: ShelfKind }) {
       )}
 
       {total === 0 ? (
-        <div className="shelf-empty">
-          <h2>{COPY[kind].empty}</h2>
-          <p>{COPY[kind].emptyHint}</p>
-          <button type="button" className="btn btn-primary" onClick={() => setEditing('new')}>
-            <Icon name="plus" size={16} />
-            Apuntar libro
-          </button>
-        </div>
+        <EmptyShelf
+          title={COPY[kind].empty}
+          text={COPY[kind].emptyHint}
+          actionLabel="Apuntar libro"
+          onAction={() => setEditing('new')}
+        />
       ) : items.length === 0 ? (
         <p className="empty-state">Ningún libro coincide con la búsqueda.</p>
       ) : (

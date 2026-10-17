@@ -9,6 +9,8 @@ export interface PagedItems<T> {
   pages: T[][][];
   page: number;
   direction: TurnDirection;
+  /** Cuántas hojas se saltaron en el último giro. */
+  distance: number;
   goTo: (page: number) => void;
   turn: (delta: 1 | -1) => void;
 }
@@ -25,6 +27,7 @@ export function usePagedItems<T>(
   const [width, setWidth] = useState(0);
   const [page, setPage] = useState(0);
   const [direction, setDirection] = useState<TurnDirection>(1);
+  const [distance, setDistance] = useState(1);
   const observer = useRef<ResizeObserver | null>(null);
 
   const measureRef = useCallback((node: HTMLElement | null) => {
@@ -58,6 +61,7 @@ export function usePagedItems<T>(
       const clamped = Math.max(0, Math.min(next, lastPage));
       if (clamped === current) return;
       setDirection(clamped > current ? 1 : -1);
+      setDistance(Math.abs(clamped - current));
       setPage(clamped);
     },
     [current, lastPage],
@@ -65,5 +69,5 @@ export function usePagedItems<T>(
 
   const turn = useCallback((delta: 1 | -1) => goTo(current + delta), [current, goTo]);
 
-  return { measureRef, width, pages, page: current, direction, goTo, turn };
+  return { measureRef, width, pages, page: current, direction, distance, goTo, turn };
 }

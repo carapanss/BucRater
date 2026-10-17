@@ -276,9 +276,9 @@ input[type='search']::-webkit-search-cancel-button {
   background: var(--paper);
   transform: translateX(-8px);
   transition:
-    transform 0.45s var(--ease-out),
-    background-color 0.2s var(--ease-out),
-    color 0.2s var(--ease-out);
+    transform 0.7s cubic-bezier(0.34, 1.5, 0.64, 1),
+    background-color 0.25s var(--ease-out),
+    color 0.25s var(--ease-out);
 }
 /* el extremo de la cinta lleva la trama de su sección */
 .ribbon::after {
@@ -322,16 +322,35 @@ input[type='search']::-webkit-search-cancel-button {
 
 .page-turn {
   position: relative;
-  perspective: 2600px;
+  perspective: 2400px;
   perspective-origin: 30% 20%;
 }
-.page-leaf {
-  position: relative;
+.page-leaf,
+.page-ghost {
   transform-origin: 0% 50%;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   background: var(--paper);
   border-radius: 0 5px 5px 0;
+}
+.page-leaf {
+  position: relative;
+}
+/* hojas en blanco que pasan entre la que se va y la que llega */
+.page-ghost {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  box-shadow: 1px 0 0 var(--paper-edge), 0 0 0 1px var(--rule-soft) inset;
+}
+/* sobre las baldas la hoja gira sobre el lomo del libro, que queda a la izquierda de la balda */
+.page-turn.is-shelf {
+  perspective-origin: calc(var(--gutter) * -1 + 40%) 20%;
+}
+.page-turn.is-shelf .page-leaf,
+.page-turn.is-shelf .page-ghost {
+  transform-origin: calc(var(--gutter) * -1) 50%;
 }
 /* sombra del pliegue sobre la hoja que gira */
 .page-leaf-shade {
@@ -341,13 +360,54 @@ input[type='search']::-webkit-search-cancel-button {
   opacity: 0;
   pointer-events: none;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--leaf-shadow), transparent 75%);
+  background:
+    linear-gradient(90deg, var(--leaf-shadow), transparent 22%),
+    linear-gradient(90deg, transparent 55%, var(--leaf-shadow));
+}
+/* el canto del papel, visible mientras la hoja está levantada */
+.page-leaf-edge {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: -4px;
+  width: 4px;
+  z-index: 3;
+  opacity: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(90deg, var(--paper-edge) 0 1px, var(--paper-edge-light) 1px 2px);
 }
 
 .app-view {
   max-width: 1320px;
   margin: 0 auto;
   padding: 34px 56px 72px var(--gutter);
+}
+/* al llegar la hoja nueva, su contenido se imprime en orden: encabezado, herramientas, libros */
+.app-view > * {
+  animation: ink-in 0.7s var(--ease-out) both;
+  animation-delay: calc(0.3s + var(--i, 0) * 70ms);
+}
+.app-view > :nth-child(2) {
+  --i: 1;
+}
+.app-view > :nth-child(3) {
+  --i: 2;
+}
+.app-view > :nth-child(4) {
+  --i: 3;
+}
+.app-view > :nth-child(n + 5) {
+  --i: 4;
+}
+@keyframes ink-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .boot-state {
@@ -881,6 +941,16 @@ input[type='checkbox'] {
   gap: 8px;
   min-height: 18px;
 }
+.book-card-title {
+  text-decoration: underline 1px transparent;
+  text-underline-offset: 4px;
+  transition: text-decoration-color 0.25s var(--ease-out);
+}
+.book-card:hover .book-card-title,
+.shelf-item-open:hover .book-card-title,
+.book-card:focus-visible .book-card-title {
+  text-decoration-color: var(--ink);
+}
 .book-card:focus-visible .book-card-cover,
 .shelf-item-open:focus-visible .book-card-cover {
   outline: 2px solid var(--ink-blue);
@@ -1195,6 +1265,11 @@ input[type='checkbox'] {
   background: none;
   color: var(--ink);
   border-radius: 2px;
+}
+.folio-number:focus-visible,
+.folio-turn:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: -2px;
 }
 .folio-turn:hover:not(:disabled) {
   background: var(--paper-hover);
@@ -1694,12 +1769,6 @@ input[type='checkbox'] {
   font-size: 21px;
   line-height: 1.15;
   margin: 0 0 18px;
-}
-.chart-note {
-  font-size: 13px;
-  font-style: italic;
-  color: var(--ink-muted);
-  margin: -12px 0 16px;
 }
 
 /* gráficas de barras: tinta sobre papel, apoyadas en un filete */
@@ -2459,6 +2528,9 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .app-view > * {
+    animation: none;
+  }
   *,
   *::before,
   *::after {

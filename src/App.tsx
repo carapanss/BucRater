@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react';
-import { MotionConfig, motion } from 'framer-motion';
+import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import { useThemeStore } from './store/useThemeStore';
 import { useTagsStore } from './store/useTagsStore';
 import { useBooksStore } from './store/useBooksStore';
@@ -49,6 +49,7 @@ export default function App() {
   const pushToast = useToastStore((s) => s.push);
   const [view, setView] = useState<View>('list');
   const [direction, setDirection] = useState<TurnDirection>(1);
+  const [distance, setDistance] = useState(1);
   const [syncReady, setSyncReady] = useState(false);
 
   useEffect(() => {
@@ -88,7 +89,10 @@ export default function App() {
 
   function goTo(next: View) {
     if (next === view) return;
-    setDirection(TABS.findIndex((t) => t.id === next) > TABS.findIndex((t) => t.id === view) ? 1 : -1);
+    const from = TABS.findIndex((t) => t.id === view);
+    const to = TABS.findIndex((t) => t.id === next);
+    setDirection(to > from ? 1 : -1);
+    setDistance(Math.abs(to - from));
     setView(next);
     window.scrollTo({ top: 0 });
   }
@@ -113,7 +117,16 @@ export default function App() {
           <header className="running-head">
             <span className="app-title">BucRater</span>
             <span className="running-chapter" aria-hidden="true">
-              {CHAPTER[view]}
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.span
+                  key={view}
+                  initial={{ opacity: 0, y: 7 }}
+                  animate={{ opacity: 1, y: 0, transition: { duration: 0.4, ease: easeOutExpo, delay: 0.18 } }}
+                  exit={{ opacity: 0, y: -7, transition: { duration: 0.16 } }}
+                >
+                  {CHAPTER[view]}
+                </motion.span>
+              </AnimatePresence>
             </span>
             <div className="header-actions">
               <button
@@ -150,7 +163,7 @@ export default function App() {
             {!syncReady ? (
               <BootState />
             ) : (
-              <PageTurn pageKey={view} direction={direction}>
+              <PageTurn pageKey={view} direction={direction} distance={distance}>
                 <div className="app-view">
                   {view === 'list' && <BookListView />}
                   {view === 'wishlist' && <ShelfView kind="wishlist" />}

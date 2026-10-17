@@ -21,7 +21,6 @@ export const BookCard = memo(function BookCard({ book, index, hidden, onSelect }
       type="button"
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0, transition: { duration: 0.5, ease: easeOutExpo, delay: Math.min(index, 14) * 0.03 } }}
-      exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.15 } }}
       transition={springFirm}
       className="book-card"
       style={clothStyle(book)}

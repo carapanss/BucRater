@@ -11,6 +11,7 @@ import { Icon } from '../components/Icon';
 import { BookFormView } from './BookFormView';
 import { springFirm } from '../lib/motion';
 import { PagedShelf } from '../components/PagedShelf';
+import { EmptyShelf } from '../components/EmptyShelf';
 import { clothStyle, NEW_BOOK_STYLE, spineMetrics } from '../lib/cloth';
 import type { Book, BookFilter } from '../types';
 
@@ -108,7 +109,12 @@ export function BookListView() {
         filtered ? (
           <p className="empty-state">Ningún libro coincide con la búsqueda o los filtros.</p>
         ) : (
-          <EmptyShelf onAdd={openNew} />
+          <EmptyShelf
+            title="Tu estantería está vacía"
+            text="Todavía no has añadido ningún libro. Busca el primero por título o autor y lo rellenamos por ti."
+            actionLabel="Añadir libro"
+            onAction={openNew}
+          />
         )
       ) : (
         <LayoutGroup id={shelfMode}>
@@ -173,37 +179,6 @@ export function BookListView() {
           </Modal>
         )}
       </AnimatePresence>
-    </div>
-  );
-}
-
-const EMPTY_SPINES = [
-  { color: 'var(--pat-0)', height: 74 },
-  { color: 'var(--pat-2)', height: 62 },
-  { color: 'var(--pat-1)', height: 80 },
-  { color: 'var(--pat-3)', height: 68 },
-];
-
-function EmptyShelf({ onAdd }: { onAdd: () => void }) {
-  return (
-    <div className="shelf-empty">
-      <div className="shelf-empty-spines" aria-hidden="true">
-        {EMPTY_SPINES.map((spine, i) => (
-          <motion.span
-            key={i}
-            style={{ background: spine.color, height: spine.height }}
-            initial={{ y: -40, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ ...springFirm, delay: 0.1 + i * 0.07 }}
-          />
-        ))}
-      </div>
-      <h2>Tu estantería está vacía</h2>
-      <p>Todavía no has añadido ningún libro. Busca el primero por título o autor y lo rellenamos por ti.</p>
-      <button type="button" className="btn btn-primary" onClick={onAdd}>
-        <Icon name="plus" size={16} />
-        Añadir libro
-      </button>
     </div>
   );
 }

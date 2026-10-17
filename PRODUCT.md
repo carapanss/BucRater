@@ -18,12 +18,12 @@ React 19 + TypeScript (strict), Zustand, Framer Motion, Vite. Plain CSS in `src/
 
 ## Product truths to preserve
 
-- Three areas: Libros (cover grid + detail + add/edit form), Métricas (yearly wrapped + charts + history), Tags (manager with colour, rename, merge, delete).
-- Header actions: import, export menu, update button, theme toggle.
+- Five areas: Libros (cover grid + detail + add/edit form), Quiero leer and Comprados sin leer (shelves of unread books, kept apart from the library and its metrics), Métricas (yearly wrapped + charts + history), Tags (manager with colour, rename, merge, delete).
+- Header actions: import, export menu, update button, cover-colour toggle (black and white by default), theme toggle.
 - Wrapped summary can be exported as a 1080×1350 PNG poster.
 - Background sync with a private server; toasts report sync/import/export results.
 - UI language: Spanish.
 
 ## Open decisions
 
-- Visual world: being replaced (user asked for a new visual world, 2026-10-02). Animation intensity: expressive but tasteful, concentrated in a few memorable moments.
+- Visual world: printed book in black and white, patterns instead of colour (user asked 2026-10-17); colour survives only as an opt-in for covers. Animation intensity: expressive but tasteful, concentrated in the page turn.

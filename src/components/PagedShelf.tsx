@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { PageTurn } from './PageTurn';
 import { usePagedItems } from '../hooks/usePagedItems';
@@ -86,7 +86,7 @@ export function PagedShelf<T>({
   resetKey,
   label,
 }: PagedShelfProps<T>) {
-  const { measureRef, width, pages, page, direction, goTo, turn } = usePagedItems<T>(
+  const { measureRef, width, pages, page, direction, distance, goTo, turn } = usePagedItems<T>(
     items,
     (all, w) => {
       const shelves = shelvesPerPage();
@@ -110,13 +110,30 @@ export function PagedShelf<T>({
     return () => window.removeEventListener('keydown', onKey);
   }, [turn]);
 
+  // Al pasar de hoja desde el pie, la nueva hoja se lee desde arriba: se devuelve la vista a su inicio.
+  const shelfRef = useRef<HTMLElement | null>(null);
+  const shownPage = useRef(page);
+  useEffect(() => {
+    if (shownPage.current === page) return;
+    shownPage.current = page;
+    const top = shelfRef.current?.getBoundingClientRect().top ?? 0;
+    if (top < 0) window.scrollTo({ top: window.scrollY + top - 96 });
+  }, [page]);
+
   const current = pages[page] ?? [];
   const columns = coverColumns(width);
   let counter = pages.slice(0, page).reduce((n, shelves) => n + shelves.reduce((m, r) => m + r.length, 0), 0);
 
   return (
-    <div className="paged-shelf" ref={measureRef} aria-label={label}>
-      <PageTurn pageKey={`${mode}-${page}`} direction={direction}>
+    <div
+      className="paged-shelf"
+      ref={(node) => {
+        shelfRef.current = node;
+        measureRef(node);
+      }}
+      aria-label={label}
+    >
+      <PageTurn pageKey={`${mode}-${page}`} direction={direction} distance={distance} variant="shelf">
         <div className={`shelf-page is-${mode}`}>
           {current.map((row, r) => (
             <div
