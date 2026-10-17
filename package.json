@@ -1,7 +1,7 @@
 {
   "name": "bucrater",
   "private": true,
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Registro personal de libros leídos, construido con Tauri + React.",
   "license": "MIT",
   "type": "module",
@@ -13,8 +13,8 @@
     "tauri": "tauri"
   },
   "dependencies": {
-    "@fontsource-variable/schibsted-grotesk": "^5.3.0",
-    "@fontsource/gloock": "^5.3.0",
+    "@fontsource-variable/literata": "^5.3.0",
+    "@fontsource/im-fell-english": "^5.3.0",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-dialog": "^2.7.3",
     "@tauri-apps/plugin-fs": "^2.5.2",

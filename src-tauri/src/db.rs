@@ -16,6 +16,7 @@ pub fn init(db_path: &Path) -> Result<Connection, AppError> {
     let migrations = Migrations::new(vec![
         M::up(include_str!("../migrations/001_initial.sql")),
         M::up(include_str!("../migrations/002_current_page.sql")),
+        M::up(include_str!("../migrations/003_shelf_items.sql")),
     ]);
     migrations.to_latest(&mut conn)?;
 

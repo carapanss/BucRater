@@ -14,8 +14,19 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Icon } from '../components/Icon';
 import { easeOutExpo } from '../lib/motion';
 
+/** Datos con los que arranca el formulario de un libro nuevo (p. ej. al pasarlo desde una estantería). */
+export type BookPrefill = Partial<
+  Pick<
+    FormState,
+    'title' | 'author' | 'notes' | 'status' | 'coverUrl' | 'googleBooksId' | 'pageCount' | 'publicationYear' | 'language'
+  >
+>;
+
 interface BookFormViewProps {
   book: Book | null;
+  prefill?: BookPrefill;
+  /** Se llama justo después de crear el libro (no al editar uno existente). */
+  onCreated?: () => void | Promise<void>;
   onDone: () => void;
   onDirtyChange?: (dirty: boolean) => void;
 }
@@ -39,7 +50,7 @@ interface FormState {
   tagIds: number[];
 }
 
-function toFormState(book: Book | null): FormState {
+function toFormState(book: Book | null, prefill?: BookPrefill): FormState {
   if (!book) {
     const now = new Date();
     return {
@@ -59,6 +70,7 @@ function toFormState(book: Book | null): FormState {
       seriesName: '',
       seriesIndex: '',
       tagIds: [],
+      ...prefill,
     };
   }
   return {
@@ -81,8 +93,8 @@ function toFormState(book: Book | null): FormState {
   };
 }
 
-export function BookFormView({ book, onDone, onDirtyChange }: BookFormViewProps) {
-  const [initialForm] = useState<FormState>(() => toFormState(book));
+export function BookFormView({ book, prefill, onCreated, onDone, onDirtyChange }: BookFormViewProps) {
+  const [initialForm] = useState<FormState>(() => toFormState(book, prefill));
   const [form, setForm] = useState<FormState>(() => initialForm);
   const [titleQuery, setTitleQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -189,6 +201,7 @@ export function BookFormView({ book, onDone, onDirtyChange }: BookFormViewProps)
         await setTags(book.uuid, form.tagIds);
       } else {
         saved = await addBook({ ...payload, tagIds: form.tagIds });
+        await onCreated?.();
       }
       if (manualCoverPath) {
         const localPath = await importCover(manualCoverPath, saved.uuid);

@@ -1,4 +1,5 @@
 import { useEffect, type CSSProperties, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { Icon } from './Icon';
 import { easeOutExpo } from '../lib/motion';
@@ -24,7 +25,8 @@ export function Modal({ title, onClose, children, variant = 'sheet', cloth }: Mo
 
   const isBook = variant === 'book';
 
-  return (
+  // En el <body>: así queda por encima de la cabecera y de la hoja que gira, y no hereda sus transformaciones.
+  return createPortal(
     <motion.div
       className="modal-overlay"
       layoutScroll
@@ -74,6 +76,7 @@ export function Modal({ title, onClose, children, variant = 'sheet', cloth }: Mo
         </div>
         {children}
       </motion.div>
-    </motion.div>
+    </motion.div>,
+    document.body,
   );
 }

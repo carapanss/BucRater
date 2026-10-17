@@ -10,7 +10,8 @@ import { Modal } from '../components/Modal';
 import { Icon } from '../components/Icon';
 import { BookFormView } from './BookFormView';
 import { springFirm } from '../lib/motion';
-import { clothFor } from '../lib/cloth';
+import { PagedShelf } from '../components/PagedShelf';
+import { clothFor, spineMetrics } from '../lib/cloth';
 import type { Book, BookFilter } from '../types';
 
 type ShelfMode = 'covers' | 'spines';
@@ -111,35 +112,30 @@ export function BookListView() {
         )
       ) : (
         <LayoutGroup id={shelfMode}>
-          {shelfMode === 'covers' ? (
-            <div className="shelf">
-              <AnimatePresence>
-                {books.map((book, index) => (
-                  <BookCard
-                    key={book.uuid}
-                    book={book}
-                    index={index}
-                    hidden={book.uuid === selectedBookUuid}
-                    onSelect={setSelectedBookUuid}
-                  />
-                ))}
-              </AnimatePresence>
-            </div>
-          ) : (
-            <div className="spine-shelf">
-              <AnimatePresence>
-                {books.map((book, index) => (
-                  <BookSpine
-                    key={book.uuid}
-                    book={book}
-                    index={index}
-                    hidden={book.uuid === selectedBookUuid}
-                    onSelect={setSelectedBookUuid}
-                  />
-                ))}
-              </AnimatePresence>
-            </div>
-          )}
+          <PagedShelf
+            items={books}
+            mode={shelfMode}
+            label="Biblioteca"
+            resetKey={JSON.stringify(filter)}
+            itemKey={(book) => book.uuid}
+            spineWidth={(book) => spineMetrics(book).width}
+            renderCover={(book, index) => (
+              <BookCard
+                book={book}
+                index={index}
+                hidden={book.uuid === selectedBookUuid}
+                onSelect={setSelectedBookUuid}
+              />
+            )}
+            renderSpine={(book, index) => (
+              <BookSpine
+                book={book}
+                index={index}
+                hidden={book.uuid === selectedBookUuid}
+                onSelect={setSelectedBookUuid}
+              />
+            )}
+          />
 
           <AnimatePresence>
             {selectedBook && (

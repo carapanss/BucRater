@@ -15,6 +15,13 @@ pub trait BookRepository: Send + Sync {
     fn decrement_reread(&self, book_id: i64) -> Result<Book, AppError>;
 }
 
+pub trait ShelfRepository: Send + Sync {
+    fn list(&self, shelf: Option<String>) -> Result<Vec<ShelfItem>, AppError>;
+    fn create(&self, new: NewShelfItem) -> Result<ShelfItem, AppError>;
+    fn update(&self, uuid: &str, changes: NewShelfItem) -> Result<ShelfItem, AppError>;
+    fn delete(&self, id: i64) -> Result<(), AppError>;
+}
+
 pub trait TagRepository: Send + Sync {
     fn list(&self) -> Result<Vec<Tag>, AppError>;
     fn create(&self, name: String, color: Option<String>) -> Result<Tag, AppError>;

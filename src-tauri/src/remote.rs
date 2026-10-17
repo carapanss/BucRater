@@ -9,7 +9,7 @@ use reqwest::blocking::{Client, RequestBuilder};
 use serde::{Deserialize, Serialize};
 
 use crate::error::AppError;
-use crate::models::{BackupBook, BackupData, CoverAsset};
+use crate::models::{BackupBook, BackupData, CoverAsset, ShelfItem};
 use crate::repository::sqlite::SqliteRepository;
 use crate::repository::BackupRepository;
 
@@ -323,6 +323,7 @@ fn empty_snapshot() -> BackupData {
     BackupData {
         tags: Vec::new(),
         books: Vec::new(),
+        shelf_items: Vec::new(),
     }
 }
 
@@ -433,8 +434,22 @@ fn merge_snapshots(local: &BackupData, remote: &BackupData) -> BackupData {
     let mut merged_tags: Vec<_> = tags.into_values().collect();
     merged_tags.sort_by_key(|tag| tag.name.to_lowercase());
 
+    // Cada ejemplar de estantería se identifica por su uuid; gana el modificado más tarde.
+    let mut shelf_items: HashMap<String, ShelfItem> = HashMap::new();
+    for item in remote.shelf_items.iter().chain(local.shelf_items.iter()) {
+        let keeps_current = shelf_items
+            .get(&item.uuid)
+            .is_some_and(|current| current.updated_at > item.updated_at);
+        if !keeps_current {
+            shelf_items.insert(item.uuid.clone(), item.clone());
+        }
+    }
+    let mut merged_shelf_items: Vec<_> = shelf_items.into_values().collect();
+    merged_shelf_items.sort_by(|a, b| a.created_at.cmp(&b.created_at));
+
     BackupData {
         tags: merged_tags,
         books: merged_books,
+        shelf_items: merged_shelf_items,
     }
 }

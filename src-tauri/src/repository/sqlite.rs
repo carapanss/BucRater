@@ -6,7 +6,10 @@ use uuid::Uuid;
 use crate::error::AppError;
 use crate::models::*;
 
-use super::{BackupRepository, BookRepository, MetricsRepository, QuoteRepository, TagRepository};
+use super::{
+    BackupRepository, BookRepository, MetricsRepository, QuoteRepository, ShelfRepository,
+    TagRepository,
+};
 
 pub struct SqliteRepository {
     conn: Mutex<Connection>,
@@ -51,6 +54,24 @@ fn row_to_book(row: &rusqlite::Row) -> rusqlite::Result<Book> {
         created_at: row.get("created_at")?,
         updated_at: row.get("updated_at")?,
         tags: Vec::new(),
+    })
+}
+
+fn row_to_shelf_item(row: &rusqlite::Row) -> rusqlite::Result<ShelfItem> {
+    Ok(ShelfItem {
+        id: row.get("id")?,
+        uuid: row.get("uuid")?,
+        shelf: row.get("shelf")?,
+        title: row.get("title")?,
+        author: row.get("author")?,
+        notes: row.get("notes")?,
+        cover_url: row.get("cover_url")?,
+        google_books_id: row.get("google_books_id")?,
+        page_count: row.get("page_count")?,
+        publication_year: row.get("publication_year")?,
+        language: row.get("language")?,
+        created_at: row.get("created_at")?,
+        updated_at: row.get("updated_at")?,
     })
 }
 
@@ -708,6 +729,84 @@ impl MetricsRepository for SqliteRepository {
     }
 }
 
+fn fetch_shelf_item(conn: &Connection, uuid: &str) -> Result<ShelfItem, AppError> {
+    conn.query_row(
+        "SELECT * FROM shelf_items WHERE uuid = ?1",
+        params![uuid],
+        row_to_shelf_item,
+    )
+    .optional()?
+    .ok_or_else(|| AppError::Other("libro de la estantería no encontrado".into()))
+}
+
+impl ShelfRepository for SqliteRepository {
+    fn list(&self, shelf: Option<String>) -> Result<Vec<ShelfItem>, AppError> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT * FROM shelf_items WHERE (?1 IS NULL OR shelf = ?1) \
+             ORDER BY created_at DESC, id DESC",
+        )?;
+        let items = stmt
+            .query_map(params![shelf], row_to_shelf_item)?
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(items)
+    }
+
+    fn create(&self, new: NewShelfItem) -> Result<ShelfItem, AppError> {
+        let conn = self.conn.lock().unwrap();
+        let uuid = Uuid::new_v4().to_string();
+        conn.execute(
+            "INSERT INTO shelf_items (
+                uuid, shelf, title, author, notes, cover_url, google_books_id,
+                page_count, publication_year, language
+            ) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10)",
+            params![
+                uuid,
+                new.shelf,
+                new.title,
+                new.author,
+                new.notes,
+                new.cover_url,
+                new.google_books_id,
+                new.page_count,
+                new.publication_year,
+                new.language,
+            ],
+        )?;
+        fetch_shelf_item(&conn, &uuid)
+    }
+
+    fn update(&self, uuid: &str, changes: NewShelfItem) -> Result<ShelfItem, AppError> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "UPDATE shelf_items SET
+                shelf = ?1, title = ?2, author = ?3, notes = ?4, cover_url = ?5,
+                google_books_id = ?6, page_count = ?7, publication_year = ?8,
+                language = ?9, updated_at = datetime('now')
+             WHERE uuid = ?10",
+            params![
+                changes.shelf,
+                changes.title,
+                changes.author,
+                changes.notes,
+                changes.cover_url,
+                changes.google_books_id,
+                changes.page_count,
+                changes.publication_year,
+                changes.language,
+                uuid,
+            ],
+        )?;
+        fetch_shelf_item(&conn, uuid)
+    }
+
+    fn delete(&self, id: i64) -> Result<(), AppError> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute("DELETE FROM shelf_items WHERE id = ?1", params![id])?;
+        Ok(())
+    }
+}
+
 fn import_all_tx(
     tx: &rusqlite::Transaction<'_>,
     data: BackupData,
@@ -814,6 +913,35 @@ fn import_all_tx(
         }
     }
 
+    for item in &data.shelf_items {
+        tx.execute(
+            "INSERT INTO shelf_items (
+                uuid, shelf, title, author, notes, cover_url, google_books_id,
+                page_count, publication_year, language, created_at, updated_at
+            ) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12)
+            ON CONFLICT(uuid) DO UPDATE SET
+                shelf=excluded.shelf, title=excluded.title, author=excluded.author,
+                notes=excluded.notes, cover_url=excluded.cover_url,
+                google_books_id=excluded.google_books_id, page_count=excluded.page_count,
+                publication_year=excluded.publication_year, language=excluded.language,
+                updated_at=excluded.updated_at",
+            params![
+                item.uuid,
+                item.shelf,
+                item.title,
+                item.author,
+                item.notes,
+                item.cover_url,
+                item.google_books_id,
+                item.page_count,
+                item.publication_year,
+                item.language,
+                item.created_at,
+                item.updated_at,
+            ],
+        )?;
+    }
+
     Ok(ImportReport { imported, updated })
 }
 
@@ -870,7 +998,16 @@ impl BackupRepository for SqliteRepository {
             })
             .collect();
 
-        Ok(BackupData { tags, books })
+        let mut stmt = conn.prepare("SELECT * FROM shelf_items ORDER BY created_at ASC, id ASC")?;
+        let shelf_items = stmt
+            .query_map([], row_to_shelf_item)?
+            .collect::<Result<Vec<_>, _>>()?;
+
+        Ok(BackupData {
+            tags,
+            books,
+            shelf_items,
+        })
     }
 
     fn import_all(&self, data: BackupData) -> Result<ImportReport, AppError> {
@@ -891,6 +1028,7 @@ impl SqliteRepository {
         tx.execute("DELETE FROM book_tags", [])?;
         tx.execute("DELETE FROM quotes", [])?;
         tx.execute("DELETE FROM books", [])?;
+        tx.execute("DELETE FROM shelf_items", [])?;
         tx.execute("DELETE FROM tags", [])?;
         let report = import_all_tx(&tx, data)?;
         tx.commit()?;
@@ -909,6 +1047,7 @@ mod tests {
         let migrations = Migrations::new(vec![
             M::up(include_str!("../../migrations/001_initial.sql")),
             M::up(include_str!("../../migrations/002_current_page.sql")),
+            M::up(include_str!("../../migrations/003_shelf_items.sql")),
         ]);
         migrations.to_latest(&mut conn).unwrap();
         SqliteRepository::new(conn)

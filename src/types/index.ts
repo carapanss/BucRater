@@ -62,6 +62,27 @@ export interface BookFilter {
   sortBy?: BookSortBy | null;
 }
 
+/** Estantería de lo que aún no se ha leído: lo que apetece leer o lo comprado sin leer. */
+export type ShelfKind = 'wishlist' | 'owned';
+
+export interface ShelfItem {
+  id: number;
+  uuid: string;
+  shelf: ShelfKind;
+  title: string;
+  author: string;
+  notes: string | null;
+  coverUrl: string | null;
+  googleBooksId: string | null;
+  pageCount: number | null;
+  publicationYear: number | null;
+  language: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type NewShelfItem = Omit<ShelfItem, 'id' | 'uuid' | 'createdAt' | 'updatedAt'>;
+
 export interface Quote {
   id: number;
   bookId: number;

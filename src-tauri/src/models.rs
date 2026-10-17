@@ -77,6 +77,40 @@ pub struct BookUpdate {
     pub series_index: Option<f64>,
 }
 
+/// Un libro que todavía no se ha leído: está en la lista de deseos o ya comprado.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ShelfItem {
+    pub id: i64,
+    pub uuid: String,
+    /// `wishlist` (quiero leer) u `owned` (comprado sin leer).
+    pub shelf: String,
+    pub title: String,
+    pub author: String,
+    pub notes: Option<String>,
+    pub cover_url: Option<String>,
+    pub google_books_id: Option<String>,
+    pub page_count: Option<i64>,
+    pub publication_year: Option<i64>,
+    pub language: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NewShelfItem {
+    pub shelf: String,
+    pub title: String,
+    pub author: String,
+    pub notes: Option<String>,
+    pub cover_url: Option<String>,
+    pub google_books_id: Option<String>,
+    pub page_count: Option<i64>,
+    pub publication_year: Option<i64>,
+    pub language: Option<String>,
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BookFilter {
@@ -211,6 +245,9 @@ pub struct BackupBook {
 pub struct BackupData {
     pub tags: Vec<Tag>,
     pub books: Vec<BackupBook>,
+    /// Estanterías «quiero leer» y «comprados sin leer». Los backups anteriores no la traen.
+    #[serde(default)]
+    pub shelf_items: Vec<ShelfItem>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

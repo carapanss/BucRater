@@ -26,7 +26,16 @@ function cacheRemoteCover(book: CoverBook, url: string, setCover: (uuid: string,
   return promise;
 }
 
-export function CoverImage({ book }: { book: CoverBook }) {
+interface CoverImageProps {
+  book: CoverBook;
+  /**
+   * Para libros que no están en la biblioteca (estanterías): en lugar de descargar la portada
+   * al dispositivo, avisa de la URL remota que ha cargado para que quien llama la guarde.
+   */
+  onRemoteCover?: (url: string) => void;
+}
+
+export function CoverImage({ book, onRemoteCover }: CoverImageProps) {
   const setCover = useBooksStore((state) => state.setCover);
   const rootRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -131,7 +140,9 @@ export function CoverImage({ book }: { book: CoverBook }) {
         src={source}
         alt={book.title}
         onLoad={() => {
-          if (isRemoteUrl(source)) {
+          if (isRemoteUrl(source) && onRemoteCover) {
+            if (source !== book.coverUrl) onRemoteCover(source);
+          } else if (isRemoteUrl(source)) {
             void cacheRemoteCover(book, source, setCover).catch(() => {
               // Si la caché falla, la imagen remota sigue visible como respaldo.
             });
